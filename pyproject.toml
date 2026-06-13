@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68.0.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "academic-anonymous-grader"
+version = "0.1.0"
+description = "Anonymous academic assessment grading tool"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "S"]
+# Allow assert in tests; S101 is pytest-compatible
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "N802", "N803", "N806"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+# streamlit and its dependencies have incomplete stubs
+[[tool.mypy.overrides]]
+module = ["streamlit", "streamlit.*"]
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
