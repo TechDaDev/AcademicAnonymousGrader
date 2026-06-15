@@ -98,28 +98,34 @@
 | AC-P5-07 | Given the lecturer is grading, when they click Mark for Review, then the response is flagged. | Manual test. |
 | AC-P5-08 | Given grading progress exists, when the page is refreshed, then progress is retained. | Manual test. |
 
-## Phase 6: Review
+## Phase 6: Review  ✅
 
 | ID | Criterion | Verification Method |
 |----|-----------|-------------------|
-| AC-P6-01 | Given an assessment with graded and ungraded responses, when the lecturer opens the Review page, then all responses are listed with completion status. | Manual test. |
-| AC-P6-02 | Given the Review page is open, when the lecturer applies the "Incomplete" filter, then only ungraded responses are shown. | Manual test. |
-| AC-P6-03 | Given the Review page is open, when the lecturer applies the "Marked for Review" filter, then only flagged responses are shown. | Manual test. |
-| AC-P6-04 | Given the Review page is open, when the lecturer clicks a response row, then they are taken to that response on the Grading page. | Manual test. |
+| AC-P6-01 | Given an assessment with graded submissions, when the lecturer opens the Review page, then all submissions are listed with anonymous code, total grade, review status, and error count. | Automated test (`test_list_submissions`) + manual test. |
+| AC-P6-02 | Given the Review page is open, when the lecturer selects a submission, then grades per question, optional feedback, and validation messages are displayed. | Automated test (`test_get_submission`) + manual test. |
+| AC-P6-03 | Given a fully graded submission with valid grades, when the lecturer approves it, then the review status changes to "approved" and a timestamp is recorded. | Automated test (`test_approve_valid`, `test_approve_with_note`). |
+| AC-P6-04 | Given a submission with an invalid grade (null, missing, above max, not graded), when the lecturer attempts to approve it, then approval is blocked with an appropriate error and specific validation code (RV001–RV006). | Automated tests (`test_missing_grade_record_error`, `test_null_grade`, `test_grade_above_max`, `test_not_graded_status`, `test_approve_blocked_with_errors`). |
+| AC-P6-05 | Given a reviewed submission, when the lecturer marks it as "Needs Correction", then a reviewer note is required and the status is updated. | Automated tests (`test_mark_needs_correction`, `test_note_required`). |
+| AC-P6-06 | Given a submission marked "Needs Correction", when the lecturer returns it to grading, then the review status resets to "not_ready" and the note is cleared. | Automated test (`test_return_to_grading`). |
+| AC-P6-07 | Given an assessment with submissions at various review statuses, when the lecturer views progress, then counts for each status and completion percentage are correct. | Automated tests (`test_all_not_ready`, `test_approved`, `test_mixed_statuses`, `test_zero_submissions`). |
+| AC-P6-08 | Given an assessment-level validation check, when all submissions are approved and have no errors, then the assessment is marked as ready. | Automated test (`test_ready_assessment`). |
+| AC-P6-09 | Given an assessment with submissions needing correction or missing grades, when assessment-level validation runs, then blocking errors are returned (RA001–RA007). | Automated test (`test_needs_correction_blocks_ready`). |
+| AC-P6-10 | Given the Review page, when submissions are displayed, then only anonymous codes are shown — no names, emails, or institutional IDs. | Automated tests (`test_list_no_names`, `test_view_no_identities`, `test_safe_repr`). |
 
-## Phase 7: Finalisation and Excel Export
+## Phase 7: Finalisation and Excel Export  ✅
 
 | ID | Criterion | Verification Method |
 |----|-----------|-------------------|
-| AC-P7-01 | Given an assessment with all responses graded, when the lecturer validates for finalisation, then all checks pass. | Manual test. |
-| AC-P7-02 | Given an assessment with ungraded responses, when the lecturer tries to finalise, then finalisation is blocked with a list of incomplete items. | Manual test. |
-| AC-P7-03 | Given a finalised assessment, when the lecturer attempts to edit a grade, then editing is blocked. | Manual test. |
-| AC-P7-04 | Given a finalised assessment, when the lecturer generates an export, then a clear warning is shown about identity restoration. | Manual test. |
-| AC-P7-05 | Given the export warning, when the lecturer has not confirmed, then the export button is disabled. | Manual test. |
-| AC-P7-06 | Given the lecturer confirms identity restoration, when they click Export, then an `.xlsx` file is generated with correct data. | Manual test + file inspection. |
-| AC-P7-07 | Given an exported Excel file, when a cell begins with `=`, `+`, `-`, or `@`, then the cell displays as plain text, not as a formula. | Automated test with openpyxl. |
-| AC-P7-08 | Given a finalised assessment, when the lecturer reopens it, then grades become editable and the action is logged. | Manual test + audit log check. |
-| AC-P7-09 | Given a reopened assessment is re-finalised, then it can be exported again. | Manual test. |
+| AC-P7-01 | Given an assessment with all submissions approved and GradeRecords valid, when readiness is checked, then all FA001–FA011 checks pass and is_ready is true. | Automated test (`test_ready_assessment_finalizes`). |
+| AC-P7-02 | Given an assessment with an unapproved submission, when readiness is checked, then FA005 blocks finalization. | Automated test (`test_unapproved_submission_blocks`). |
+| AC-P7-03 | Given a finalized assessment, when the lecturer attempts to edit a grade, then editing is blocked with `FinalizedAssessmentModificationError`. | Automated test (`test_edit_grade_after_finalization_blocked`). |
+| AC-P7-04 | Given a finalized assessment, when the lecturer attempts a review action, then it is blocked with `FinalizedAssessmentModificationError`. | Automated tests (approve, needs-correction, return-to-grading). |
+| AC-P7-05 | Given a finalized assessment, when the lecturer attempts to add or delete a question, then it is blocked with `FinalizedAssessmentModificationError`. | Automated tests (`test_add_question_after_finalization_blocked`, `test_delete_question_after_finalization_blocked`). |
+| AC-P7-06 | Given a finalized assessment, when the lecturer attempts to import, then it is blocked. | Automated service test. |
+| AC-P7-07 | Given a finalized assessment, when the lecturer confirms and finalizes, then an Excel workbook is generated with correct data and formula-injection protection. | Automated tests (workbook generation, sheets, formula safety). |
+| AC-P7-08 | Given a finalized assessment, when the lecturer re-exports, then a new ExportRecord is created and grades remain unchanged. | Automated test (`test_reexport_allowed`). |
+| AC-P7-09 | Given an exported workbook, when inspected, then no ciphertext, encryption keys, fingerprints, or UUIDs are present in cells. | Automated privacy audit tests. |
 
 ## High-Level Acceptance Criteria Summary
 

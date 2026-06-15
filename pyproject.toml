@@ -17,7 +17,7 @@ line-length = 120
 select = ["E", "F", "W", "I", "N", "UP", "S"]
 # Allow assert in tests; S101 is pytest-compatible
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "N802", "N803", "N806"]
+"tests/*" = ["S101", "N802", "N803", "N806", "E702", "E501"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -28,11 +28,23 @@ strict = true
 warn_unused_ignores = true
 disallow_incomplete_defs = true
 check_untyped_defs = true
+exclude = [
+    # pytest dynamically creates this directory; not a project source directory
+    "data/pytest-of-real_",
+]
 # streamlit and its dependencies have incomplete stubs
 [[tool.mypy.overrides]]
 module = ["streamlit", "streamlit.*"]
 ignore_missing_imports = true
 check_untyped_defs = true
+
+# Allow untyped fixture parameters in pytest test files
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+ignore_missing_imports = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+no_implicit_optional = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -3,3 +3,9 @@
 streamlit>=1.36.0,<2.0.0
 SQLAlchemy>=2.0.30,<3.0.0
 python-dotenv>=1.0.1,<2.0.0
+beautifulsoup4>=4.12.3,<5.0.0
+lxml>=5.2.0,<6.0.0
+cryptography>=42.0.0,<50.0.0
+
+# Phase 7: Finalization and Excel Export
+openpyxl>=3.1.0,<4.0.0

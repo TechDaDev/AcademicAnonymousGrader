@@ -30,7 +30,7 @@ class TestUUIDPrimaryKeys:
         uuid.UUID(material.id)
 
     def test_student_identity_uuid(self, session: Session) -> None:
-        identity = StudentIdentity(first_name="John")
+        identity = StudentIdentity(encrypted_first_name="enc:John")
         session.add(identity)
         session.flush()
         assert identity.id is not None
@@ -117,20 +117,29 @@ class TestStudentIdentityModel:
     """StudentIdentity constraints and safety."""
 
     def test_student_identity_can_exist_without_email(self, session: Session) -> None:
-        identity = StudentIdentity(first_name="John", last_name="Doe")
+        identity = StudentIdentity(encrypted_first_name="enc:John", encrypted_last_name="enc:Doe")
         session.add(identity)
         session.flush()
-        assert identity.email is None
+        assert identity.encrypted_email is None
 
     def test_duplicate_email_values_allowed(self, session: Session) -> None:
-        i1 = StudentIdentity(first_name="John", email="john@example.com")
-        i2 = StudentIdentity(first_name="Jane", email="john@example.com")
+        i1 = StudentIdentity(
+            encrypted_first_name="enc:John",
+            encrypted_email="enc:john@example.com",
+            email_fingerprint="fp:john@example.com",
+        )
+        i2 = StudentIdentity(
+            encrypted_first_name="enc:Jane",
+            encrypted_email="enc:john@example.com",
+            email_fingerprint="fp:john@example.com",
+        )
         session.add_all([i1, i2])
         session.flush()  # Should not raise
 
     def test_repr_does_not_expose_pii(self, session: Session) -> None:
         identity = StudentIdentity(
-            first_name="John", last_name="Doe", email="john@example.com"
+            encrypted_first_name="enc:John", encrypted_last_name="enc:Doe",
+            encrypted_email="enc:john@example.com",
         )
         session.add(identity)
         session.flush()
@@ -143,17 +152,17 @@ class TestStudentIdentityModel:
 class TestAnonymousStudentModel:
     """AnonymousStudent constraints."""
 
-    def test_anonymous_id_is_unique(self, session: Session) -> None:
-        identity1 = StudentIdentity(first_name="Alice")
-        identity2 = StudentIdentity(first_name="Bob")
+    def test_anonymous_code_is_unique(self, session: Session) -> None:
+        identity1 = StudentIdentity(encrypted_first_name="enc:Alice")
+        identity2 = StudentIdentity(encrypted_first_name="enc:Bob")
         session.add_all([identity1, identity2])
         session.flush()
 
         a1 = AnonymousStudent(
-            student_identity_id=identity1.id, anonymous_id="STU-ABCD1234"
+            student_identity_id=identity1.id, anonymous_code="STU-ABCD1234"
         )
         a2 = AnonymousStudent(
-            student_identity_id=identity2.id, anonymous_id="STU-ABCD1234"
+            student_identity_id=identity2.id, anonymous_code="STU-ABCD1234"
         )
         session.add_all([a1, a2])
 
@@ -195,11 +204,17 @@ class TestResponseModel:
 class TestGradeRecordModel:
     """GradeRecord constraints."""
 
-    def test_grade_record_unique_per_response(self, session: Session, full_graph: dict[str, Any]) -> None:
-        response = full_graph["response1"]
-
-        g1 = GradeRecord(response_id=response.id, score=8.00)
-        g2 = GradeRecord(response_id=response.id, score=9.00)
+    def test_grade_record_unique_per_submission_question(self, session: Session, full_graph: dict[str, Any]) -> None:
+        g1 = GradeRecord(
+            submission_id=full_graph["submission"].id,
+            question_id=full_graph["question1"].id,
+            grade=Decimal("8.00"),
+        )
+        g2 = GradeRecord(
+            submission_id=full_graph["submission"].id,
+            question_id=full_graph["question1"].id,
+            grade=Decimal("9.00"),
+        )
         session.add_all([g1, g2])
 
         with pytest.raises(IntegrityError):

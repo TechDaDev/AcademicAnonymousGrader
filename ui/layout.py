@@ -29,7 +29,7 @@ def render_app_header() -> None:
         "<h1 style='margin-bottom: 0;'>📚 Academic Anonymous Grader</h1>",
         unsafe_allow_html=True,
     )
-    st.caption("Phase 1 — Project Foundation")
+    st.caption("Phase 5 — Manual Anonymous Grading")
     st.divider()
 
 

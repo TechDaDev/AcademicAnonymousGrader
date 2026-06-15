@@ -25,6 +25,13 @@ PROJECT_ROOT: Final[Path] = _find_project_root()
 dotenv.load_dotenv(PROJECT_ROOT / ".env")
 
 
+def _env_int(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    return int(value)
+
+
 @dataclass(frozen=True)
 class Settings:
     """Immutable application settings.
@@ -62,6 +69,19 @@ class Settings:
     backup_directory: str = field(
         default_factory=lambda: os.getenv("BACKUP_DIRECTORY", "backups")
     )
+    max_upload_size_mb: int = field(default_factory=lambda: _env_int("MAX_UPLOAD_SIZE_MB", 20))
+    max_html_tables: int = field(default_factory=lambda: _env_int("MAX_HTML_TABLES", 20))
+    max_import_rows: int = field(default_factory=lambda: _env_int("MAX_IMPORT_ROWS", 10_000))
+    max_import_columns: int = field(default_factory=lambda: _env_int("MAX_IMPORT_COLUMNS", 500))
+    max_cell_text_length: int = field(default_factory=lambda: _env_int("MAX_CELL_TEXT_LENGTH", 1_000_000))
+
+    # Phase 4 encryption and fingerprint keys
+    identity_encryption_key: str = field(
+        default_factory=lambda: os.getenv("IDENTITY_ENCRYPTION_KEY", "")
+    )
+    identity_fingerprint_key: str = field(
+        default_factory=lambda: os.getenv("IDENTITY_FINGERPRINT_KEY", "")
+    )
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
@@ -77,6 +97,16 @@ class Settings:
 
         if not self.database_url:
             raise ValueError("DATABASE_URL must not be empty")
+
+        for name, value in {
+            "MAX_UPLOAD_SIZE_MB": self.max_upload_size_mb,
+            "MAX_HTML_TABLES": self.max_html_tables,
+            "MAX_IMPORT_ROWS": self.max_import_rows,
+            "MAX_IMPORT_COLUMNS": self.max_import_columns,
+            "MAX_CELL_TEXT_LENGTH": self.max_cell_text_length,
+        }.items():
+            if value <= 0:
+                raise ValueError(f"{name} must be greater than zero")
 
     @property
     def resolved_data_dir(self) -> Path:
@@ -98,7 +128,6 @@ class Settings:
     def resolved_log_file(self) -> Path:
         return self._resolve(self.log_file)
 
-    @property
     def resolved_database_url(self) -> str:
         url = self.database_url
         if url.startswith("sqlite:///") and not url.startswith("sqlite:////"):
@@ -107,6 +136,14 @@ class Settings:
             abs_path.parent.mkdir(parents=True, exist_ok=True)
             return f"sqlite:///{abs_path.as_posix()}"
         return url
+
+    @property
+    def max_upload_size_bytes(self) -> int:
+        return self.max_upload_size_mb * 1024 * 1024
+
+    @property
+    def has_phase4_keys(self) -> bool:
+        return bool(self.identity_encryption_key) and bool(self.identity_fingerprint_key)
 
     def _resolve(self, path_str: str) -> Path:
         p = Path(path_str)

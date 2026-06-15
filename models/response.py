@@ -15,7 +15,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
-    from models.grade_record import GradeRecord
     from models.question import Question
     from models.submission import Submission
 
@@ -42,9 +41,6 @@ class Response(TimestampMixin, Base):
     # Relationships
     submission: Mapped[Submission] = relationship("Submission", back_populates="responses")
     question: Mapped[Question] = relationship("Question", back_populates="responses")
-    grade_record: Mapped[GradeRecord | None] = relationship(
-        "GradeRecord", back_populates="response", uselist=False, cascade="all, delete-orphan"
-    )
 
     __table_args__ = (
         UniqueConstraint("submission_id", "question_id", name="uq_response_per_submission_question"),

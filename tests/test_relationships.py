@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any
 
 import pytest
@@ -71,18 +72,18 @@ class TestStudentIdentityToAnonymous:
     """StudentIdentity → AnonymousStudent relationship."""
 
     def test_identity_has_anonymous_student(self, session: Session) -> None:
-        identity = StudentIdentity(first_name="Alice")
+        identity = StudentIdentity(encrypted_first_name="enc:Alice")
         session.add(identity)
         session.flush()
 
         anonymous = AnonymousStudent(
-            student_identity_id=identity.id, anonymous_id="STU-TEST1234"
+            student_identity_id=identity.id, anonymous_code="STU-TEST1234"
         )
         session.add(anonymous)
         session.flush()
 
         assert identity.anonymous_student is not None
-        assert identity.anonymous_student.anonymous_id == "STU-TEST1234"
+        assert identity.anonymous_student.anonymous_code == "STU-TEST1234"
 
 
 class TestAnonymousStudentToSubmission:
@@ -101,13 +102,14 @@ class TestSubmissionToResponses:
         assert len(submission.responses) == 1
 
 
-class TestResponseToGradeRecord:
-    """Response → GradeRecord relationship."""
+class TestSubmissionToGradeRecord:
+    """Submission → GradeRecord relationship."""
 
-    def test_response_has_grade_record(self, session: Session, full_graph: dict[str, Any]) -> None:
-        response = full_graph["response1"]
-        assert response.grade_record is not None
-        assert response.grade_record.score == 7.50
+    def test_submission_has_grade_records(self, session: Session, full_graph: dict[str, Any]) -> None:
+        submission = full_graph["submission"]
+        assert len(submission.grade_records) == 1
+        assert submission.grade_records[0].grade == Decimal("7.50")
+        assert submission.grade_records[0].grading_status == "graded"
 
 
 class TestAssessmentToExportRecord:

@@ -78,6 +78,12 @@ backup/
 # === Logs ===
 logs/
 *.log
+
+# === Local Sample Files ===
+# Local manual-testing files may contain real academic data.
+samples/*
+!samples/.gitkeep
+!samples/README.md
 # Keep .gitkeep placeholder
 !logs/.gitkeep
 

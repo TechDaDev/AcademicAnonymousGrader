@@ -1,8 +1,8 @@
 # Academic Anonymous Grader — Main Application Entry Point
-"""Phase 1 — Project Foundation.
+"""Phase 3 — HTML Parser.
 
-This is a foundation build. The application shell, database, and navigation
-are in place, but no business logic has been implemented yet.
+Materials, assessments, and questions can now be created and managed.
+HTML import preview is available. Grading and export remain future phases.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ def main() -> None:
         log_file=settings.resolved_log_file,
         log_level=settings.log_level,
     )
-    logger.info("Starting Academic Anonymous Grader — Phase 1")
+    logger.info("Starting Academic Anonymous Grader — Phase 3")
 
     try:
         settings.create_directories(settings)
@@ -49,7 +49,7 @@ def main() -> None:
 
     # Initialize database
     try:
-        database_url = settings.resolved_database_url
+        database_url = settings.resolved_database_url()
         engine = get_engine(database_url, echo=settings.app_debug)
         initialize_database(engine)
         logger.info("Database initialized successfully")
@@ -84,6 +84,22 @@ def main() -> None:
 
     st.divider()
 
+    # Phase 2 detail metrics
+    st.subheader("Material and Assessment Status")
+    det1, det2, det3, det4, det5 = st.columns(5)
+    with det1:
+        render_metric_card("Active Materials", stats.active_materials)
+    with det2:
+        render_metric_card("Archived Materials", stats.archived_materials)
+    with det3:
+        render_metric_card("Draft Assessments", stats.draft_assessments)
+    with det4:
+        render_metric_card("Ready Assessments", stats.ready_assessments)
+    with det5:
+        render_metric_card("Archived Assessments", stats.archived_assessments)
+
+    st.divider()
+
     # System information
     st.subheader("System Information")
     info_col1, info_col2, info_col3 = st.columns(3)
@@ -93,7 +109,7 @@ def main() -> None:
         db_status = "✅ Connected" if engine else "❌ Not connected"
         st.markdown(f"**Database:** {db_status}")
     with info_col3:
-        st.markdown("**Current Phase:** `Phase 1 — Project Foundation`")
+        st.markdown("**Current Phase:** `Phase 3 — HTML Parser`")
 
     render_foundation_warning()
 

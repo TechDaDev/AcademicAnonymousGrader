@@ -67,10 +67,10 @@ class TestModelReprPrivacy:
     def test_student_identity_repr_no_pii(self) -> None:
         """StudentIdentity.__repr__ must not contain PII."""
         identity = StudentIdentity(
-            first_name="Confidential",
-            last_name="User",
-            email="secret@example.com",
-            institutional_student_id="S12345",
+            encrypted_first_name="enc:Confidential",
+            encrypted_last_name="enc:User",
+            encrypted_email="enc:secret@example.com",
+            encrypted_institutional_student_id="enc:S12345",
         )
         representation = repr(identity)
         assert "Confidential" not in representation

@@ -6,9 +6,9 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base, TimestampMixin
@@ -28,16 +28,24 @@ class Assessment(TimestampMixin, Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     material_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("materials.id", ondelete="CASCADE"), nullable=False
+        String(36), ForeignKey("materials.id", ondelete="CASCADE"), nullable=False, index=True
     )
     title: Mapped[str] = mapped_column(String(200), nullable=False)
-    assessment_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    academic_year: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    assessment_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    academic_year: Mapped[str | None] = mapped_column(String(30), nullable=True)
     maximum_grade: Mapped[Decimal] = mapped_column(Numeric(8, 2, asdecimal=True), nullable=False)
     status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="draft"
+        String(20), nullable=False, default="draft", index=True
     )
-    finalized_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)  # noqa: UP045
+    finalized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # noqa: UP045
+    finalization_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="not_ready", index=True
+    )
+    finalization_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("maximum_grade > 0", name="ck_assessment_max_grade_positive"),
+    )
 
     # Relationships
     material: Mapped[Material] = relationship("Material", back_populates="assessments")

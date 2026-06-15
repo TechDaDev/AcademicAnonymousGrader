@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import tempfile
 from collections.abc import Generator
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -103,13 +104,16 @@ def full_graph(session: Session) -> dict[str, Any]:
     session.add_all([question1, question2])
     session.flush()
 
-    identity = StudentIdentity(first_name="Alice", last_name="Smith")
+    identity = StudentIdentity(
+        encrypted_first_name="enc:Alice",
+        encrypted_last_name="enc:Smith",
+    )
     session.add(identity)
     session.flush()
 
     anonymous = AnonymousStudent(
         student_identity_id=identity.id,
-        anonymous_id="STU-TEST9999",
+        anonymous_code="STU-TEST9999",
     )
     session.add(anonymous)
     session.flush()
@@ -127,7 +131,6 @@ def full_graph(session: Session) -> dict[str, Any]:
         assessment_id=assessment.id,
         anonymous_student_id=anonymous.id,
         import_batch_id=batch.id,
-        grading_status="pending",
     )
     session.add(submission)
     session.flush()
@@ -141,9 +144,10 @@ def full_graph(session: Session) -> dict[str, Any]:
     session.flush()
 
     grade1 = GradeRecord(
-        response_id=response1.id,
-        score=7.50,
-        status="graded",
+        submission_id=submission.id,
+        question_id=question1.id,
+        grade=Decimal("7.50"),
+        grading_status="graded",
     )
     session.add(grade1)
     session.flush()

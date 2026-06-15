@@ -22,6 +22,11 @@ class DashboardStats:
     assessment_count: int = 0
     student_count: int = 0
     submission_count: int = 0
+    active_materials: int = 0
+    archived_materials: int = 0
+    draft_assessments: int = 0
+    ready_assessments: int = 0
+    archived_assessments: int = 0
 
 
 def get_dashboard_stats(session: Session) -> DashboardStats:
@@ -42,8 +47,22 @@ def get_dashboard_stats(session: Session) -> DashboardStats:
         assessment_count = session.query(func.count(Assessment.id)).scalar() or 0
         student_count = session.query(func.count(AnonymousStudent.id)).scalar() or 0
         submission_count = session.query(func.count(Submission.id)).scalar() or 0
+        active_materials = session.query(func.count(Material.id)).filter(
+            Material.is_archived == False  # noqa: E712
+        ).scalar() or 0
+        archived_materials = session.query(func.count(Material.id)).filter(
+            Material.is_archived == True  # noqa: E712
+        ).scalar() or 0
+        draft_assessments = session.query(func.count(Assessment.id)).filter(
+            Assessment.status == "draft"
+        ).scalar() or 0
+        ready_assessments = session.query(func.count(Assessment.id)).filter(
+            Assessment.status == "ready"
+        ).scalar() or 0
+        archived_assessments = session.query(func.count(Assessment.id)).filter(
+            Assessment.status == "archived"
+        ).scalar() or 0
     except Exception:
-        # If the database is not yet initialized or unreachable, return zeros
         return DashboardStats()
 
     return DashboardStats(
@@ -51,4 +70,9 @@ def get_dashboard_stats(session: Session) -> DashboardStats:
         assessment_count=assessment_count,
         student_count=student_count,
         submission_count=submission_count,
+        active_materials=active_materials,
+        archived_materials=archived_materials,
+        draft_assessments=draft_assessments,
+        ready_assessments=ready_assessments,
+        archived_assessments=archived_assessments,
     )

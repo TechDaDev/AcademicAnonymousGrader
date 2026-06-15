@@ -24,8 +24,7 @@ def render_metric_card(label: str, value: int | str, help_text: str | None = Non
 def render_foundation_warning() -> None:
     """Render a prominent warning that the application is not ready for real data."""
     st.warning(
-        "⚠️ **Foundation Build** — This is Phase 1 of development. "
-        "Do not use with real student data. "
-        "The application is not yet ready for production use.",
+        "⚠️ **Phase 3 Preview** — HTML import preview is available, but no student records are saved yet. "
+        "Do not use with real student data outside approved test fixtures.",
         icon="⚠️",
     )

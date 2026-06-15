@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, String
+from sqlalchemy import Boolean, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base, TimestampMixin
@@ -21,13 +21,17 @@ class Material(TimestampMixin, Base):
     __tablename__ = "materials"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    code: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    academic_year: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    code: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    academic_year: Mapped[str | None] = mapped_column(String(30), nullable=True)
     stage: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    department: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    is_archived: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    department: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+
+    __table_args__ = (
+        Index("ix_material_name_year", "name", "academic_year"),
+    )
 
     # Relationships
     assessments: Mapped[list[Assessment]] = relationship(

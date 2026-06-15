@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html><body>
+<script>malicious()</script>
+<table>
+  <tr><th>First name</th><th>Last name</th><th>Email</th><th onclick="alert(1)">Response 1</th></tr>
+  <tr><td>Safe</td><td>User</td><td>safe@example.com</td>
+  <td><script>alert(1)</script>Clean<br/><iframe src="evil"></iframe></td></tr>
+</table>
+<style>.hidden{display:none}</style>
+</body></html>

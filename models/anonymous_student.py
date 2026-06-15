@@ -29,8 +29,8 @@ class AnonymousStudent(TimestampMixin, Base):
     student_identity_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("student_identities.id", ondelete="CASCADE"), nullable=False
     )
-    # anonymous_id will be generated in Phase 4 (format: STU-XXXXXXXX)
-    anonymous_id: Mapped[str] = mapped_column(String(20), nullable=False)
+    # anonymous_code generated in Phase 4 (format: STU-XXXXXXXX)
+    anonymous_code: Mapped[str] = mapped_column(String(20), nullable=False)
 
     # Relationships
     student_identity: Mapped[StudentIdentity] = relationship(
@@ -41,9 +41,9 @@ class AnonymousStudent(TimestampMixin, Base):
     )
 
     __table_args__ = (
-        UniqueConstraint("anonymous_id", name="uq_anonymous_id"),
+        UniqueConstraint("anonymous_code", name="uq_anonymous_code"),
         UniqueConstraint("student_identity_id", name="uq_student_identity_per_anonymous"),
     )
 
     def __repr__(self) -> str:
-        return f"<AnonymousStudent id={self.id} anonymous_id='{self.anonymous_id}'>"
+        return f"<AnonymousStudent id={self.id} anonymous_code='{self.anonymous_code}'>"

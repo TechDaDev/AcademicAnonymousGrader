@@ -107,12 +107,11 @@
 | Aspect | Detail |
 |--------|--------|
 | **Purpose** | Represents a graded component within a material. |
-| **Suggested fields** | `id`, `material_id`, `name`, `description`, `max_grade`, `status` (draft/importing/grading/review/finalised/reopened), `created_at`, `updated_at`, `finalised_at` |
-| **Required fields** | `material_id`, `name`, `max_grade` |
-| **Optional fields** | `description`, `finalised_at` |
-| **Relationships** | Belongs to a `Material`; has many `Question`, `Submission`, and `ImportBatch` records. |
-| **Uniqueness** | `name` is unique within a material. |
-| **Lifecycle** | Draft → Importing → Grading → Review → Finalised. Can be reopened to Grading. |
+| **Suggested fields** | `id`, `material_id`, `title`, `assessment_type`, `academic_year`, `maximum_grade`, `status` (draft/ready/grading/finalized), `finalized_at`, `finalization_status` (not_ready/ready_to_finalize/finalized), `finalization_note`, `created_at`, `updated_at` |
+| **Required fields** | `material_id`, `title`, `maximum_grade` |
+| **Optional fields** | `assessment_type`, `academic_year`, `finalized_at`, `finalization_note` |
+| **Relationships** | Belongs to a `Material`; has many `Question`, `Submission`, `ImportBatch`, and `ExportRecord` records. |
+| **Lifecycle** | Draft → Ready → Grading → Finalized. `finalization_status` tracks readiness for finalization. After finalization, grading, review, and import are blocked. |
 | **Contains PII?** | No. |
 
 ### Question
@@ -173,12 +172,12 @@
 | Aspect | Detail |
 |--------|--------|
 | **Purpose** | Represents a single student's submitted work for one assessment. |
-| **Suggested fields** | `id`, `assessment_id`, `student_identity_id`, `import_batch_id`, `status` (started/completed), `started_at`, `completed_at`, `duration_seconds`, `source_grade`, `created_at` |
+| **Suggested fields** | `id`, `assessment_id`, `student_identity_id`, `import_batch_id`, `status` (started/completed), `started_at`, `completed_at`, `duration_seconds`, `source_grade`, `created_at`, `grading_status`, `review_status` (not_ready/ready_for_review/needs_correction/approved), `reviewed_at`, `review_note` |
 | **Required fields** | `assessment_id`, `student_identity_id`, `import_batch_id` |
-| **Optional fields** | `status`, `started_at`, `completed_at`, `duration_seconds`, `source_grade` |
-| **Relationships** | Belongs to an `Assessment` and a `StudentIdentity`; belongs to an `ImportBatch`; has many `Response` records. |
+| **Optional fields** | `status`, `started_at`, `completed_at`, `duration_seconds`, `source_grade`, `reviewed_at`, `review_note` |
+| **Relationships** | Belongs to an `Assessment` and a `StudentIdentity`; belongs to an `ImportBatch`; has many `Response` and `GradeRecord` records. |
 | **Uniqueness** | `(assessment_id, student_identity_id)` must be unique — one submission per student per assessment. |
-| **Lifecycle** | Created on import. Updated on reimport (response content). Never deleted in normal operation. |
+| **Lifecycle** | Created on import. Updated on reimport (response content). Never deleted in normal operation. `review_status` transitions through lifecycle. |
 | **Contains PII?** | Indirectly, via `student_identity_id`. |
 
 ### Response
@@ -225,10 +224,10 @@
 | Aspect | Detail |
 |--------|--------|
 | **Purpose** | Records each authorised export of identifiable results. |
-| **Suggested fields** | `id`, `assessment_id`, `lecturer_id`, `exported_at`, `filename`, `row_count`, `file_hash`, `is_identifiable` (true) |
-| **Required fields** | `assessment_id`, `lecturer_id`, `filename`, `row_count` |
-| **Optional fields** | `file_hash` |
-| **Relationships** | Belongs to an `Assessment` and a `Lecturer`. |
-| **Uniqueness** | None (sequential log). |
-| **Lifecycle** | Created on each export. Retained indefinitely. |
-| **Contains PII?** | Records metadata about the export but should not contain the exported student data itself. |
+| **Suggested fields** | `id`, `assessment_id`, `export_format` (xlsx), `export_reference` (EXP-XXXXXXXX), `workbook_schema_version`, `file_name`, `file_hash` (SHA-256), `file_size`, `row_count`, `exported_at`, `created_at`, `updated_at` |
+| **Required fields** | `assessment_id`, `file_name` |
+| **Optional fields** | `file_hash`, `file_size`, `row_count`, `exported_at` |
+| **Relationships** | Belongs to an `Assessment`. |
+| **Security** | Never stores workbook bytes, decrypted identity data, or export file paths containing identity information. Each row is a metadata-only record. |
+| **Uniqueness** | None — multiple exports per finalized assessment allowed. |
+| **Lifecycle** | Created on each export. Retained indefinitely. Re-export does not modify existing records. |

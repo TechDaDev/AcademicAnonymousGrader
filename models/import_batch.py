@@ -32,9 +32,17 @@ class ImportBatch(TimestampMixin, Base):
     )
     source_filename: Mapped[str] = mapped_column(String(255), nullable=False)
     source_format: Mapped[str] = mapped_column(String(10), nullable=False, default="html")
+    source_file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source_file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    parser_name: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    parser_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    selected_table_index: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
-    imported_row_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    rejected_row_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_rows: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    imported_rows: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    skipped_rows: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    warning_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    error_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # noqa: UP045
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # noqa: UP045
 
@@ -47,5 +55,5 @@ class ImportBatch(TimestampMixin, Base):
     def __repr__(self) -> str:
         return (
             f"<ImportBatch id={self.id} assessment_id={self.assessment_id} "
-            f"file='{self.source_filename}' status='{self.status}'>"
+            f"status='{self.status}'>"
         )

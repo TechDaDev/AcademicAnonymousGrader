@@ -110,23 +110,68 @@ The application opens in the default web browser. The dashboard is displayed.
 - Every score or feedback change is committed to the database immediately on save.
 - A save-confirmation indicator is displayed.
 
-### 15. Review Incomplete and Flagged Records
+### 15. Review and Validate Graded Submissions
 
-- The Review page shows all graded and ungraded responses.
+- The Review page shows all submissions with their review status and validation summaries.
 - Filters allow the lecturer to see:
-  - Incomplete (ungraded) responses
-  - Zero-score responses
-  - Responses marked for review
-- The lecturer can click through to the Grading page for any response.
+  - All submissions
+  - Not Ready (ungraded or partially graded)
+  - Ready for Review (fully graded, awaiting review)
+  - Needs Correction (flagged by reviewer)
+  - Approved (review passed)
+- Each submission displays validation errors (RV001–RV006) and warnings (RVW001–RVW003).
+- The lecturer can:
+  - **Approve** a submission (optionally with a reviewer note).
+  - **Mark as Needs Correction** (reviewer note is required).
+  - **Return to Grading** (resets review status to `not_ready` and clears the note).
+- Submission navigation uses anonymous codes for consistent ordering.
 
 ### 16. Validate the Assessment
 
-- Before finalisation, the system checks:
-  - All responses have been graded.
+- Before finalisation, the system performs assessment-level validation (RA001–RA007):
+  - All submissions have valid grade records.
   - No score exceeds the question maximum.
-  - No negative scores exist.
-  - All anonymous IDs have valid identity mappings.
+  - No negative or null scores exist.
+  - Total grades do not exceed assessment maximum.
+  - No submissions are in needs_correction or not_ready status.
+  - At least one question exists.
 - Validation results are displayed. Blocking errors prevent finalisation.
+
+### 17. Finalise Assessment
+
+- On the Export page, select the material and assessment.
+- The system displays **finalization readiness** with total submissions, approved submissions, and blocking errors (FA001–FA011).
+- Blocking errors include: no questions, question total mismatch, no submissions, unapproved submissions, missing GradeRecords, null/negative/above-max grades, non-graded status, total exceeding max.
+- When ready, check the confirmation box:
+  > "I confirm that all grades and reviews are complete and that finalization will lock grading changes."
+- Click **Finalize Assessment**.
+- Assessment status changes to **Finalized**.
+- After finalization:
+  - Grade edits are blocked at the service layer.
+  - Review actions (approve, needs correction, return to grading) are blocked.
+  - Import into the assessment is blocked.
+  - Questions cannot be added or deleted.
+  - Re-export remains allowed.
+
+### 18. Export Final Grades
+
+- On the finalized assessment page, click **Generate Workbook**.
+- The system produces an `.xlsx` workbook containing:
+  - **Final Grades sheet** — Institutional Student ID, First Name, Last Name, Full Name, Email, Anonymous Code, Final Grade, Maximum Grade, Percentage, Review Status, Assessment, Material, Academic Year, Exported At.
+  - **Question Grades sheet** — Per-student grades and maximums for each question.
+  - **Feedback sheet** — Per-question feedback with student identifiers.
+  - **Export Summary sheet** — Export reference, assessment details, grade statistics, schema version.
+- Identity fields are decrypted **only during workbook generation** and never stored back.
+- Formula injection is prevented — values starting with `=`, `+`, `-`, or `@` are prefixed with `'`.
+- A download button appears with the generated workbook.
+- Each export creates a new `ExportRecord` with SHA-256 hash, row count, and file size.
+
+### 19. Re-export
+
+- The lecturer can generate a new workbook at any time after finalization.
+- Re-export does not modify grades, review statuses, or finalization state.
+- Each re-export creates a new `ExportRecord` with a unique export reference.
+- Export history is displayed below the download section.
 
 ### 17. Finalise Grades
 

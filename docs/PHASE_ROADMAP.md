@@ -42,17 +42,17 @@
 
 ---
 
-## Phase 3: HTML Parser
+## Phase 3: HTML Parser and Import Preview
 
 | Aspect | Detail |
 |--------|--------|
-| **Goal** | Implement the HTML response file parser with dynamic column detection, data extraction, and import preview. |
-| **Included work** | Implement HTML parsing service using BeautifulSoup; implement column normalisation and detection; implement dynamic response-column detection; implement import preview display; implement import validation rules F001–F010 and S001–S006; implement edge-case handling (Arabic text, line breaks, code indentation, HTML entities, blank responses, duplicate emails, malformed data); implement ImportBatch recording; implement `ImportResult` data structure. |
-| **Excluded work** | Pseudonymisation (Phase 4); grading (Phase 5); XLSX or CSV import (Phase 9). |
+| **Goal** | Implement safe parsing and preview of academic response files exported as HTML. No student records, submissions, or responses are persisted. |
+| **Included work** | Implement HTML parsing service using BeautifulSoup/lxml; implement column normalisation, detection, and alias registry; implement dynamic response-column detection (Response N, Answer N, Question N); implement import preview page with table selection, column mapping, and row preview; implement import validation rules F001–F010 and S001–S006; implement edge-case handling (Arabic text, line breaks, code indentation, HTML entities, blank responses, duplicate emails, malformed data, HTML safety); implement `ParsedImport` and related data models; implement metadata parsing (dates, durations, grades); implement configurable file-size, row, column, and cell limits. |
+| **Excluded work** | Student database import; identity matching; pseudonymisation (Phase 4); identity encryption (Phase 4); submission/response persistence; grading (Phase 5); XLSX or CSV import (Phase 9); browser automation; HMAC fingerprints; automatic grade acceptance. |
 | **Dependencies** | Phase 1 (database, app structure); Phase 2 (assessments and questions for mapping). |
-| **Deliverables** | HTML parser module; Import page with upload, preview, column mapping, and validation. |
-| **Tests** | Unit tests for parser with various HTML files; edge-case tests for all documented scenarios; integration tests for import flow. |
-| **Completion conditions** | All acceptance criteria AC-P3-01 through AC-P3-10 pass; the sample file imports correctly; edge cases are handled. |
+| **Deliverables** | `parsers/` package (base, html_parser, models, exceptions, normalization, column_aliases); `services/import_preview_service.py`; Import page (`pages/3_Import.py`); sanitized HTML test fixtures; 15+ dedicated parser tests. |
+| **Tests** | Unit tests for parser with various HTML fixtures; edge-case tests for all documented scenarios; parser security tests; column alias and mapping tests; metadata parsing tests; assessment reconciliation tests; no-persistence integration test. |
+| **Completion conditions** | All acceptance criteria AC-P3-01 through AC-P3-10 pass; the sample file imports correctly; edge cases are handled; no tracebacks shown; no student data persisted; Ruff and mypy clean on all new code. |
 
 ---
 
@@ -84,31 +84,31 @@
 
 ---
 
-## Phase 6: Review and Validation
+## Phase 6: Review and Validation  ✅
 
 | Aspect | Detail |
 |--------|--------|
 | **Goal** | Implement the Review page with filtering and pre-finalisation validation. |
-| **Included work** | Implement Review page UI with anonymous ID, scores, totals, status, and flag display; implement filters (incomplete, zero score, marked for review); implement navigation from Review to Grading; implement pre-finalisation validation checks FL001–FL009; display validation results with pass/fail indicators. |
+| **Included work** | Implement review service with typed result objects; implement submission validation (RV001–RV006, RVW001–RVW003); implement assessment validation (RA001–RA007); implement approval, needs-correction, and return-to-grading workflows; implement review progress tracking; update Grading page with review status badges; implement Review page UI with submission list, filter, review panel, action buttons; ensure anonymity (no StudentIdentity access); implement navigation by anonymous_code; add review columns (review_status, reviewed_at, review_note) to Submission model; update grading_service.save_submission_grades to set review_status="ready_for_review". |
 | **Excluded work** | Finalisation action (Phase 7); export (Phase 7). |
 | **Dependencies** | Phase 5 (grading produces data to review). |
-| **Deliverables** | Functional Review page with filters and validation summary. |
-| **Tests** | Integration tests for filter correctness; unit tests for finalisation validation rules. |
-| **Completion conditions** | All acceptance criteria AC-P6-01 through AC-P6-04 pass; validation correctly blocks incomplete assessments. |
+| **Deliverables** | `services/review_service.py`; `pages/5_Review.py` (replaced placeholder); `tests/test_review_service.py`, `tests/test_review_validation.py`, `tests/test_phase6_anonymity.py`, `tests/test_phase6_ui_helpers.py`, `tests/test_phase6_database_constraints.py`; updated `services/grading_service.py`, `pages/4_Grading.py`, `models/submission.py`, `services/exceptions.py`. |
+| **Tests** | 41 new tests covering list/retrieve submissions, approve/needs-correction/return-to-grading workflows, validation rules, progress tracking, assessment validation, anonymity, UI helpers, and database constraints. |
+| **Completion conditions** | 483 total tests pass; ruff clean; mypy clean; all review statuses functional; validation correctly blocks incomplete submissions; anonymity preserved; grading page shows review badges. |
 
 ---
 
-## Phase 7: Finalisation and Excel Export
+## Phase 7: Finalisation and Excel Export  ✅
 
 | Aspect | Detail |
 |--------|--------|
 | **Goal** | Implement grade finalisation (locking), identity restoration for export, and Excel workbook generation. |
-| **Included work** | Implement finalisation action (assessment status → finalised, grades become read-only); implement reopen action (with audit logging); implement Excel export service using openpyxl; implement formula-injection prevention; implement identity restoration for export only; implement export warning and confirmation UI; implement export validation E001–E008; implement `ExportRecord` creation; implement download of generated Excel file. |
+| **Included work** | Add finalization_status, finalization_note to Assessment model; create finalization service with readiness validation (FA001–FA011), explicit finalization, and grade calculation; add service-layer locking to grading, review, and import services for finalized assessments; create export identity service for AES-256-GCM decryption during export only; create Excel export service with formula-injection protection and 4-sheet workbook; update ExportRecord model with reference, hash, size, row count; implement Export page with readiness display, confirmation, finalization, and workbook download; re-export support without grade modification; sample-file structural verification. |
 | **Excluded work** | Authentication (Phase 8); audit dashboard (Phase 8); backup (Phase 8). |
-| **Dependencies** | Phase 5 (grading data); Phase 6 (validation). |
-| **Deliverables** | Finalisation workflow; Export page with Excel generation; reopen functionality. |
-| **Tests** | Unit tests for Excel generation; formula-injection tests; integration tests for finalisation flow; manual export verification. |
-| **Completion conditions** | All acceptance criteria AC-P7-01 through AC-P7-09 pass; Excel file is correct and safe. |
+| **Dependencies** | Phase 5 (grading data); Phase 6 (review approval). |
+| **Deliverables** | `services/finalization_service.py`; `services/export_identity_service.py`; `services/excel_export_service.py`; `pages/6_Export.py` (replaced placeholder); `tests/test_finalization_service.py`, `tests/test_finalization_validation.py`, `tests/test_finalization_locking.py`, `tests/test_export_identity_service.py`, `tests/test_excel_export_service.py`, `tests/test_excel_export_security.py`, `tests/test_export_record.py`, `tests/test_phase7_anonymity.py`, `tests/test_phase7_ui_helpers.py`; updated models, exceptions, and requirements. |
+| **Tests** | 57 new tests covering finalization validation matrix, locking, export workbook generation, security/privacy audit, identity decryption, ExportRecord behavior, and UI helpers. |
+| **Completion conditions** | 554 total tests pass; ruff clean; mypy clean (115 files); all finalization rules enforced at service layer; grading/review/import blocked after finalization; workbook correctly restores identities; formula injection prevented; re-export creates new ExportRecord without modifying data. |
 
 ---
 
