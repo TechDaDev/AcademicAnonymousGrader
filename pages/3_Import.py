@@ -29,10 +29,11 @@ from parsers.exceptions import (
 )
 from parsers.models import ParsedImport
 from services.assessment_service import list_assessments
+from services.authorization_service import get_auth_context
 from services.identity_matching_service import get_blocking_rows
 from services.import_preview_service import (
     format_file_size,
-    preview_html_import,
+    preview_import,
     reconcile_assessment,
     validate_mapping,
 )
@@ -44,6 +45,7 @@ from services.secure_import_service import (
     execute_secure_import,
 )
 from ui.layout import configure_page, render_app_header, render_safe_error
+from ui.session import require_authentication, require_page_access_safe
 
 logger = get_logger("import_page")
 
@@ -272,6 +274,8 @@ def _render_preview(preview_result: Any) -> None:
 
 
 def main() -> None:
+    require_authentication()
+    require_page_access_safe("Import")
     configure_page("Import")
     render_app_header()
     st.subheader("📥 HTML Import")
@@ -317,9 +321,12 @@ def main() -> None:
     responses_needed = max(len(questions), 2)
 
     # Step 4 — Upload file
-    uploaded_file = st.file_uploader("3. Upload HTML response export", type=["html", "htm"])
+    uploaded_file = st.file_uploader(
+    "3. Upload response export (HTML, XLSX, or CSV)",
+    type=["html", "htm", "xlsx", "csv"],
+)
     if uploaded_file is None:
-        st.info("Upload a sanitized HTML fixture to preview the parsed columns and rows.")
+        st.info("Upload a response export file (HTML, XLSX, or CSV) to preview the parsed columns and rows.")
         return
 
     file_bytes = uploaded_file.getvalue()
@@ -330,14 +337,14 @@ def main() -> None:
     # Step 5 — Parse
     try:
         if cached != file_hash:
-            preview = preview_html_import(file_bytes, uploaded_file.name)
+            preview = preview_import(file_bytes, uploaded_file.name)
             st.session_state["_preview"] = preview
             st.session_state["_cached_file_hash"] = file_hash
             st.session_state["_selected_table"] = None
         else:
             preview = st.session_state.get("_preview")  # type: ignore[assignment]
             if preview is None:
-                preview = preview_html_import(file_bytes, uploaded_file.name)
+                preview = preview_import(file_bytes, uploaded_file.name)
                 st.session_state["_preview"] = preview
                 st.session_state["_cached_file_hash"] = file_hash
     except (
@@ -364,7 +371,7 @@ def main() -> None:
         sel_label = st.selectbox("4. Select Table", list(opts.keys()))
         sel_index = opts[sel_label]
         if st.session_state.get("_selected_table") != sel_index:
-            preview = preview_html_import(file_bytes, uploaded_file.name, table_index=sel_index)
+            preview = preview_import(file_bytes, uploaded_file.name, table_index=sel_index)
             st.session_state["_preview"] = preview
             st.session_state["_selected_table"] = sel_index
     elif candidates:
@@ -655,6 +662,7 @@ def main() -> None:
                         source_filename=uploaded_file.name,
                         table_index=preview.parsed_import.table_index,
                         manual_decisions=manual_decisions_final,
+                        auth_ctx=get_auth_context(st.session_state),
                     )
 
                 st.markdown("---")

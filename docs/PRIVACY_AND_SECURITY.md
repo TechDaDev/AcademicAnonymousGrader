@@ -193,6 +193,28 @@ Implementation guidance:
 |---------------|----------|----------------|----------------------|
 | Student identity | First name, Last name, Email | **Sensitive** | Encrypt at rest; never display during grading; log only anonymous ID. |
 | Anonymous ID | A3F9K2B1 | **Internal** | No encryption needed; subject to access control via application. |
+
+---
+
+## Authorization Model
+
+### Operational Roles
+
+| Role | Internal Value | Display Name | Responsibilities |
+|------|---------------|-------------|----------------|
+| **Administrator** | `administrator` | Administrator | Full system access: materials, assessments, questions, import, grading, review, finalization, export (with identity restoration), user management, audit, backup, restore, settings. |
+| **Instructor** | `grader` | Instructor | Anonymous grading only. Views anonymous submissions, enters grades and feedback, saves drafts, marks grading complete. Never sees student identity. Cannot import, export, or manage users. |
+
+### Legacy Roles
+
+`reviewer`, `exporter`, and `viewer` are legacy roles stored in the database for backward compatibility. They are **not assignable** to new users, display with a `(legacy)` tag, and have no operational permissions.
+
+### Identity Protection
+
+- Instructor-facing interfaces display only anonymous codes (`STU-XXXXXXXX`).
+- Real student identities are decrypted **only** inside the administrator-authorized Excel export workflow.
+- No decrypted identity enters audit metadata, session state, or grade records.
+- The legacy `exporter` role cannot restore identities.
 | Grading data | Score, Feedback | **Internal** | Store normally; feedback should not contain PII. |
 | Response content | Student answers | **Sensitive** | May contain self-identifying info; display as text only; never execute. |
 | Export files | Excel workbooks | **Sensitive** | Contain restored identities; warn before creation; lecturer responsible for secure handling. |

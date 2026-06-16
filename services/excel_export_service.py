@@ -26,6 +26,7 @@ from models.assessment import Assessment
 from models.grade_record import GradeRecord
 from models.question import Question
 from models.submission import Submission
+from services.authorization_service import PERM_EXPORT_IDENTITY, AuthContext, authorize_context
 from services.exceptions import (
     ExportValidationError,
     ExportWorkbookError,
@@ -367,6 +368,8 @@ def generate_export_workbook(
     session: Session,
     assessment_id: str,
     settings: Settings,
+    *,
+    auth_ctx: AuthContext,
 ) -> ExportResult:
     """Generate an Excel workbook for a finalized assessment.
 
@@ -378,17 +381,16 @@ def generate_export_workbook(
         ID of the finalized assessment.
     settings : Settings
         Application settings (for encryption key).
-
-    Returns
-    -------
-    ExportResult
-        Workbook bytes, hash, size, row count, and reference.
+    auth_ctx : AuthContext
+        Authorization context. Enforces export_identity permission.
 
     Raises
     ------
-    FinalizedAssessmentExportError
-        If the assessment is not finalized or data is invalid.
+    InsufficientPermissionsError
+        If auth_ctx role lacks PERM_EXPORT_IDENTITY.
     """
+    authorize_context(auth_ctx, PERM_EXPORT_IDENTITY)
+
     assessment = session.query(Assessment).filter(Assessment.id == assessment_id).first()
     if assessment is None:
         raise FinalizedAssessmentExportError(f"Assessment {assessment_id[:8]} not found.")

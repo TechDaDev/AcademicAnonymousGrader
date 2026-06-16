@@ -19,6 +19,7 @@ from models.submission import Submission
 from security.encryption import encrypt_text
 from security.key_validation import _decode_key
 from security.models import EncryptionKey
+from services.authorization_service import AuthContext
 from services.excel_export_service import generate_export_workbook
 from services.finalization_service import finalize_assessment
 
@@ -46,7 +47,7 @@ def _setup(session: Session, settings) -> str:
     session.add(sub); session.flush()
     gr = GradeRecord(submission_id=sub.id, question_id=q1.id, grade=Decimal("85"), grading_status="graded", feedback="Good work")
     session.add(gr); session.flush()
-    finalize_assessment(session, assessment.id)
+    finalize_assessment(session, assessment.id, auth_ctx=_ADMIN_AUTH)
     return assessment.id
 
 
@@ -57,7 +58,7 @@ class TestExportSecurity:
         from config import get_settings
         settings = get_settings()
         aid = _setup(session, settings)
-        result = generate_export_workbook(session, aid, settings)
+        result = generate_export_workbook(session, aid, settings, auth_ctx=_ADMIN_AUTH)
         wb = openpyxl.load_workbook(BytesIO(result.workbook_bytes))
         for sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
@@ -72,7 +73,7 @@ class TestExportSecurity:
         from config import get_settings
         settings = get_settings()
         aid = _setup(session, settings)
-        result = generate_export_workbook(session, aid, settings)
+        result = generate_export_workbook(session, aid, settings, auth_ctx=_ADMIN_AUTH)
         wb = openpyxl.load_workbook(BytesIO(result.workbook_bytes))
         for sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
@@ -101,8 +102,8 @@ class TestExportSecurity:
         session.add(sub); session.flush()
         gr = GradeRecord(submission_id=sub.id, question_id=q1.id, grade=Decimal("85"), grading_status="graded")
         session.add(gr); session.flush()
-        finalize_assessment(session, assessment.id)
-        result = generate_export_workbook(session, assessment.id, settings)
+        finalize_assessment(session, assessment.id, auth_ctx=_ADMIN_AUTH)
+        result = generate_export_workbook(session, assessment.id, settings, auth_ctx=_ADMIN_AUTH)
         wb = openpyxl.load_workbook(BytesIO(result.workbook_bytes))
         grade = wb["Final Grades"].cell(row=2, column=7).value
         assert grade == 85.0  # GradeRecord value, not source_grade
@@ -131,8 +132,8 @@ class TestExportSecurity:
         session.add(sub); session.flush()
         gr = GradeRecord(submission_id=sub.id, question_id=q1.id, grade=Decimal("85"), grading_status="graded")
         session.add(gr); session.flush()
-        finalize_assessment(session, assessment.id)
-        result = generate_export_workbook(session, assessment.id, settings)
+        finalize_assessment(session, assessment.id, auth_ctx=_ADMIN_AUTH)
+        result = generate_export_workbook(session, assessment.id, settings, auth_ctx=_ADMIN_AUTH)
         wb = openpyxl.load_workbook(BytesIO(result.workbook_bytes))
         first_name_cell = wb["Final Grades"].cell(row=2, column=2).value
         assert first_name_cell is not None
@@ -163,8 +164,8 @@ class TestExportSecurity:
         session.add(sub); session.flush()
         gr = GradeRecord(submission_id=sub.id, question_id=q1.id, grade=Decimal("85"), grading_status="graded")
         session.add(gr); session.flush()
-        finalize_assessment(session, assessment.id)
-        result = generate_export_workbook(session, assessment.id, settings)
+        finalize_assessment(session, assessment.id, auth_ctx=_ADMIN_AUTH)
+        result = generate_export_workbook(session, assessment.id, settings, auth_ctx=_ADMIN_AUTH)
         wb = openpyxl.load_workbook(BytesIO(result.workbook_bytes))
         ws = wb["Final Grades"]
         # Identity values in identity columns (2,3,4,5) are fine; check non-identity columns
@@ -183,7 +184,7 @@ class TestExportSecurity:
         from config import get_settings
         settings = get_settings()
         aid = _setup(session, settings)
-        result = generate_export_workbook(session, aid, settings)
+        result = generate_export_workbook(session, aid, settings, auth_ctx=_ADMIN_AUTH)
         wb = openpyxl.load_workbook(BytesIO(result.workbook_bytes))
         for sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
@@ -195,7 +196,7 @@ class TestExportSecurity:
         from config import get_settings
         settings = get_settings()
         aid = _setup(session, settings)
-        result = generate_export_workbook(session, aid, settings)
+        result = generate_export_workbook(session, aid, settings, auth_ctx=_ADMIN_AUTH)
         wb = openpyxl.load_workbook(BytesIO(result.workbook_bytes))
         props = wb.properties
         assert props.creator == "Academic Anonymous Grader"
@@ -212,7 +213,7 @@ class TestExportSecurity:
         from config import get_settings
         settings = get_settings()
         aid = _setup(session, settings)
-        result = generate_export_workbook(session, aid, settings)
+        result = generate_export_workbook(session, aid, settings, auth_ctx=_ADMIN_AUTH)
         wb = openpyxl.load_workbook(BytesIO(result.workbook_bytes))
         for sheet_name in wb.sheetnames:
             ws = wb[sheet_name]
@@ -223,3 +224,5 @@ class TestExportSecurity:
                         if len(cell) == 36 and cell.count("-") == 4:
                             assert False, f"UUID found in {sheet_name}: {cell}"
 
+
+_ADMIN_AUTH = AuthContext(user_id="test-admin", role="administrator")

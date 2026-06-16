@@ -158,6 +158,49 @@ The application opens in the default web browser. The dashboard is displayed.
 - On the finalized assessment page, click **Generate Workbook**.
 - The system produces an `.xlsx` workbook containing:
   - **Final Grades sheet** — Institutional Student ID, First Name, Last Name, Full Name, Email, Anonymous Code, Final Grade, Maximum Grade, Percentage, Review Status, Assessment, Material, Academic Year, Exported At.
+
+---
+
+## Authorization Model
+
+The application uses two operational roles:
+
+- **Administrator** — Full access: materials, assessments, questions, import, grading, review, finalization, export (with identity restoration), users, audit, backup, restore, settings.
+- **Instructor** — Anonymous grading only. Never sees student identity. Cannot import, export, manage users, or access administrative functions.
+
+The internal role value `grader` is displayed as **Instructor**. Legacy roles (`reviewer`, `exporter`, `viewer`) are not assignable to new users and have no operational permissions.
+
+### Page Access Matrix
+
+| Page | Administrator | Instructor |
+|------|:---:|:---:|
+| Dashboard | ✅ | ✅ |
+| Materials | ✅ | ❌ |
+| Assessments | ✅ | ❌ |
+| Import | ✅ | ❌ |
+| Grading | ✅ | ✅ |
+| Review | ✅ | ❌ |
+| Export | ✅ | ❌ |
+| Users | ✅ | ❌ |
+| Audit | ✅ | ❌ |
+| Backup | ✅ | ❌ |
+| Settings | ✅ | ❌ |
+
+### Service-Layer Authorization
+
+All sensitive service functions require an `AuthContext` parameter. Missing or unauthorized contexts are rejected:
+- `execute_secure_import()` — requires `PERM_IMPORT_EXECUTE` (admin only)
+- `finalize_assessment()` — requires `PERM_FINALIZE_ASSESSMENT` (admin only)
+- `generate_export_workbook()` — requires `PERM_EXPORT_IDENTITY` (admin only)
+- `save_submission_grades()` — requires `PERM_GRADE_SUBMISSION` (admin and instructor)
+
+### Identity Protection
+
+- Student identities are encrypted in the database using AES-256-GCM.
+- Instructor-facing interfaces display only anonymous codes (`STU-XXXXXXXX`).
+- Real identities are restored **only** inside the administrator-authorized Excel export workflow.
+- No decrypted identity enters audit metadata, session state, or grade records.
+- The legacy `exporter` role cannot restore identities.
   - **Question Grades sheet** — Per-student grades and maximums for each question.
   - **Feedback sheet** — Per-question feedback with student identifiers.
   - **Export Summary sheet** — Export reference, assessment details, grade statistics, schema version.

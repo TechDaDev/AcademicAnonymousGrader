@@ -24,6 +24,7 @@ from services.review_service import (
     validate_assessment_review,
 )
 from ui.layout import configure_page, render_app_header, render_safe_error
+from ui.session import require_authentication, require_page_access_safe
 
 logger = get_logger("review_page")
 
@@ -191,6 +192,8 @@ def _render_review_panel(view: ReviewSubmissionView) -> tuple[bool, bool, bool, 
 
 def main() -> None:
     configure_page("Review")
+    require_authentication()
+    require_page_access_safe("Review")
     render_app_header()
     st.subheader("📋 Review and Validation")
     st.caption("Review graded submissions and approve validated work.")

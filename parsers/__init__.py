@@ -1,4 +1,4 @@
-"""HTML import parsing package."""
+"""HTML, XLSX, and CSV import parsing package."""
 
 from parsers.column_aliases import COLUMN_ALIASES, get_mapped_field
 from parsers.exceptions import (

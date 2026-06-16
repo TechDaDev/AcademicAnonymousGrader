@@ -7,7 +7,10 @@ import streamlit as st
 
 from config import get_settings
 from ui.layout import configure_page, render_app_header, render_safe_error
+from ui.session import require_authentication, require_page_access_safe
 
+require_authentication()
+require_page_access_safe("Settings")
 configure_page("Settings")
 render_app_header()
 st.subheader("Settings")

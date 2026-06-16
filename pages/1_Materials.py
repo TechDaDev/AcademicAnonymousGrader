@@ -21,6 +21,7 @@ from services.material_service import (
     update_material,
 )
 from ui.layout import configure_page, render_app_header, render_safe_error
+from ui.session import require_authentication, require_page_access_safe
 
 logger = get_logger("materials_page")
 
@@ -175,6 +176,8 @@ def _render_archive_confirm(session: Session) -> None:
 def main() -> None:
     """Materials management page."""
     configure_page("Materials")
+    require_authentication()
+    require_page_access_safe("Materials")
     render_app_header()
     st.subheader("📦 Materials")
 

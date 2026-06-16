@@ -37,10 +37,14 @@ from security.key_validation import (
     load_encryption_key,
     load_fingerprint_key,
 )
+from services.authorization_service import AuthContext
 from services.secure_import_service import (
     compute_dry_run,
     execute_secure_import,
 )
+
+# Test auth context for all secure import tests
+_ADMIN_AUTH = AuthContext(user_id="test-admin", role="administrator")
 
 # ── helpers ────────────────────────────────────────────────────────
 
@@ -219,6 +223,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         assert result.imported_student_count == 1
@@ -253,6 +258,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         assert result.imported_student_count == 2
@@ -283,6 +289,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         assert result.imported_student_count == 1
@@ -315,6 +322,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         responses = session.query(Response).all()
@@ -344,6 +352,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         responses = session.query(Response).order_by(Response.question_id).all()
@@ -384,6 +393,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         assert result.matched_identity_count == 1
@@ -412,6 +422,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
         assert result1.imported_student_count == 1
 
@@ -424,6 +435,7 @@ class TestExecuteSecureImport:
                 file_bytes=file_bytes,
                 source_filename="test.html",
                 table_index=0,
+                auth_ctx=_ADMIN_AUTH,
             )
 
     def test_missing_encryption_key_blocks_import(self, session: Session, monkeypatch) -> None:
@@ -448,6 +460,7 @@ class TestExecuteSecureImport:
                 file_bytes=file_bytes,
                 source_filename="test.html",
                 table_index=0,
+                auth_ctx=_ADMIN_AUTH,
             )
 
     def test_grade_record_remains_empty(self, session: Session, monkeypatch) -> None:
@@ -472,6 +485,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         grade_count = session.query(GradeRecord).count()
@@ -502,6 +516,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         batch = session.query(ImportBatch).first()
@@ -535,6 +550,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         # Verify StudentIdentity has fingerprints
@@ -594,6 +610,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         assert result.matched_identity_count == 1
@@ -675,6 +692,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         # AnonymousStudent should be reused
@@ -707,6 +725,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
         assert result1.imported_student_count == 1
         assert result1.submission_count == 1
@@ -721,6 +740,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes2,
             source_filename="test2.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
         # The student is the same, so submission is duplicate -> skipped
         assert result2.skipped_row_count == 1
@@ -774,6 +794,7 @@ class TestExecuteSecureImport:
                 file_bytes=b"test",
                 source_filename="test.html",
                 table_index=0,
+                auth_ctx=_ADMIN_AUTH,
             )
 
     def test_reconciliation_conflict_blocks_import(self, session: Session, monkeypatch) -> None:
@@ -798,6 +819,7 @@ class TestExecuteSecureImport:
                 file_bytes=b"test",
                 source_filename="test.html",
                 table_index=0,
+                auth_ctx=_ADMIN_AUTH,
             )
 
     def test_ambiguous_identity_blocks_import(self, session: Session, monkeypatch) -> None:
@@ -841,6 +863,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         # Row should be skipped since identity is ambiguous and no manual decision
@@ -886,6 +909,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
             manual_decisions={"row:1": f"match:{identity_a.id}"},
         )
 
@@ -931,6 +955,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
             manual_decisions={"row:1": "create_new"},
         )
 
@@ -975,6 +1000,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
             manual_decisions={"row:1": "skip"},
         )
 
@@ -1005,6 +1031,7 @@ class TestExecuteSecureImport:
                 file_bytes=file_bytes,
                 source_filename="test.html",
                 table_index=0,
+                auth_ctx=_ADMIN_AUTH,
             )
 
         # No records should exist
@@ -1054,6 +1081,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         assert result.imported_student_count == 1
@@ -1088,6 +1116,7 @@ class TestExecuteSecureImport:
             file_bytes=file_bytes,
             source_filename="test.html",
             table_index=0,
+            auth_ctx=_ADMIN_AUTH,
         )
 
         assert result.imported_student_count == 1

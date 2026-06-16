@@ -20,6 +20,7 @@ from models.submission import Submission
 from security.encryption import encrypt_text
 from security.key_validation import _decode_key
 from security.models import EncryptionKey
+from services.authorization_service import AuthContext
 from services.excel_export_service import generate_export_workbook
 from services.exceptions import FinalizedAssessmentExportError
 from services.finalization_service import finalize_assessment
@@ -55,7 +56,7 @@ def _setup(session: Session, settings) -> dict:  # type: ignore[type-arg]
     g1 = GradeRecord(submission_id=sub.id, question_id=q1.id, grade=Decimal("35"), grading_status="graded")
     g2 = GradeRecord(submission_id=sub.id, question_id=q2.id, grade=Decimal("55"), grading_status="graded")
     session.add_all([g1, g2]); session.flush()
-    finalize_assessment(session, assessment.id)
+    finalize_assessment(session, assessment.id, auth_ctx=_ADMIN_AUTH)
     return {"assessment": assessment}
 
 
@@ -66,7 +67,7 @@ class TestExcelExport:
         from config import get_settings
         settings = get_settings()
         data = _setup(session, settings)
-        result = generate_export_workbook(session, data["assessment"].id, settings)
+        result = generate_export_workbook(session, data["assessment"].id, settings, auth_ctx=_ADMIN_AUTH)
         assert result.workbook_bytes is not None
         assert result.file_hash is not None
         assert result.file_size > 0
@@ -78,7 +79,7 @@ class TestExcelExport:
         from config import get_settings
         settings = get_settings()
         data = _setup(session, settings)
-        result = generate_export_workbook(session, data["assessment"].id, settings)
+        result = generate_export_workbook(session, data["assessment"].id, settings, auth_ctx=_ADMIN_AUTH)
         wb = openpyxl.load_workbook(BytesIO(result.workbook_bytes))
         assert wb is not None
 
@@ -88,7 +89,7 @@ class TestExcelExport:
         from config import get_settings
         settings = get_settings()
         data = _setup(session, settings)
-        result = generate_export_workbook(session, data["assessment"].id, settings)
+        result = generate_export_workbook(session, data["assessment"].id, settings, auth_ctx=_ADMIN_AUTH)
         wb = openpyxl.load_workbook(BytesIO(result.workbook_bytes))
         for sheet in ("Final Grades", "Question Grades", "Feedback", "Export Summary"):
             assert sheet in wb.sheetnames
@@ -99,7 +100,7 @@ class TestExcelExport:
         from config import get_settings
         settings = get_settings()
         data = _setup(session, settings)
-        result = generate_export_workbook(session, data["assessment"].id, settings)
+        result = generate_export_workbook(session, data["assessment"].id, settings, auth_ctx=_ADMIN_AUTH)
         assert result.row_count == 1
 
     def test_not_finalized_raises(self, session: Session, monkeypatch) -> None:
@@ -112,7 +113,7 @@ class TestExcelExport:
         assert a is not None
         a.finalization_status = "not_ready"; session.flush()
         with pytest.raises(FinalizedAssessmentExportError):
-            generate_export_workbook(session, data["assessment"].id, settings)
+            generate_export_workbook(session, data["assessment"].id, settings, auth_ctx=_ADMIN_AUTH)
 
     def test_grades_numeric(self, session: Session, monkeypatch) -> None:
         monkeypatch.setenv("IDENTITY_ENCRYPTION_KEY", TEST_EKEY)
@@ -120,7 +121,9 @@ class TestExcelExport:
         from config import get_settings
         settings = get_settings()
         data = _setup(session, settings)
-        result = generate_export_workbook(session, data["assessment"].id, settings)
+        result = generate_export_workbook(session, data["assessment"].id, settings, auth_ctx=_ADMIN_AUTH)
         wb = openpyxl.load_workbook(BytesIO(result.workbook_bytes))
         grade = wb["Final Grades"].cell(row=2, column=7).value
         assert isinstance(grade, (int, float))
+
+_ADMIN_AUTH = AuthContext(user_id="test-admin", role="administrator")

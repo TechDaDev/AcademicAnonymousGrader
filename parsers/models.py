@@ -118,6 +118,15 @@ class ParsedImport:
     parse_started_at: datetime
     parse_completed_at: datetime
     candidate_tables: tuple[TableCandidate, ...] = field(default_factory=tuple)
+    # Phase 9 XLSX/CSV fields
+    source_format: str = ""
+    sheet_name: str | None = None
+    available_sheets: tuple[str, ...] = field(default_factory=tuple)
+    encoding: str | None = None
+    delimiter: str | None = None
+    formula_count: int = 0
+    hidden_row_count: int = 0
+    hidden_column_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)

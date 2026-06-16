@@ -18,6 +18,7 @@ from models.submission import Submission
 from security.encryption import encrypt_text
 from security.key_validation import _decode_key
 from security.models import EncryptionKey
+from services.authorization_service import AuthContext
 from services.exceptions import FinalizedAssessmentModificationError
 from services.finalization_service import finalize_assessment
 from services.grading_service import save_submission_grades
@@ -50,7 +51,7 @@ def _setup_finalized(session: Session) -> dict:  # type: ignore[type-arg]
     g1 = GradeRecord(submission_id=sub.id, question_id=q1.id, grade=Decimal("35"), grading_status="graded")
     g2 = GradeRecord(submission_id=sub.id, question_id=q2.id, grade=Decimal("55"), grading_status="graded")
     session.add_all([g1, g2]); session.flush()
-    finalize_assessment(session, assessment.id)
+    finalize_assessment(session, assessment.id, auth_ctx=_ADMIN_AUTH)
     return {"assessment": assessment, "q1": q1, "q2": q2, "submission": sub}
 
 
@@ -122,7 +123,7 @@ class TestReExport:
         session.add(sub); session.flush()
         gr = GradeRecord(submission_id=sub.id, question_id=q1.id, grade=Decimal("85"), grading_status="graded")
         session.add(gr); session.flush()
-        finalize_assessment(session, assessment.id)
+        finalize_assessment(session, assessment.id, auth_ctx=_ADMIN_AUTH)
         return {"assessment": assessment, "submission": sub}
 
     def test_reexport_allowed(self, session: Session, monkeypatch) -> None:
@@ -134,9 +135,9 @@ class TestReExport:
         key = _get_key(settings)
         data = self._setup_full(session, key)
         # First export
-        r1 = generate_export_workbook(session, data["assessment"].id, settings)
+        r1 = generate_export_workbook(session, data["assessment"].id, settings, auth_ctx=_ADMIN_AUTH)
         # Re-export — should work
-        r2 = generate_export_workbook(session, data["assessment"].id, settings)
+        r2 = generate_export_workbook(session, data["assessment"].id, settings, auth_ctx=_ADMIN_AUTH)
         assert r2.export_reference != r1.export_reference
         # Grades unchanged (original 1 record)
         from models.grade_record import GradeRecord as GradeRec
@@ -146,3 +147,5 @@ class TestReExport:
         a = session.query(Assessment).filter(Assessment.id == data["assessment"].id).first()
         assert a is not None
         assert a.finalization_status == "finalized"
+
+_ADMIN_AUTH = AuthContext(user_id="test-admin", role="administrator")

@@ -136,3 +136,75 @@ class ExportWorkbookError(Exception):
 
 class ExportValidationError(Exception):
     """Export data failed validation."""
+
+
+class AuthenticationError(Exception):
+    """Base exception for authentication operations."""
+
+
+class InvalidCredentialsError(AuthenticationError):
+    """Username or password is invalid."""
+
+
+class AccountDisabledError(AuthenticationError):
+    """User account is disabled."""
+
+
+class AccountLockedError(AuthenticationError):
+    """User account is temporarily locked."""
+
+
+class DuplicateUsernameError(AuthenticationError):
+    """A user with this username already exists."""
+
+
+class UserNotFoundError(AuthenticationError):
+    """User does not exist."""
+
+
+class WeakPasswordError(AuthenticationError):
+    """Password does not meet strength requirements."""
+
+
+class AuthorizationError(Exception):
+    """Base exception for authorization failures."""
+
+
+class InsufficientPermissionsError(AuthorizationError):
+    """User lacks required permissions."""
+
+
+class AuditError(Exception):
+    """Base exception for audit logging."""
+
+
+class BackupError(Exception):
+    """Base exception for backup operations."""
+
+
+class BackupNotFoundError(BackupError):
+    """Backup record does not exist."""
+
+
+class BackupCorruptedError(BackupError):
+    """Backup archive is corrupted or invalid."""
+
+
+class BackupHashMismatchError(BackupError):
+    """Backup hash does not match expected value."""
+
+
+class BackupSchemaMismatchError(BackupError):
+    """Backup schema version is incompatible."""
+
+
+class RestoreError(Exception):
+    """Base exception for restore operations."""
+
+
+class RestoreValidationError(RestoreError):
+    """Backup failed pre-restore validation."""
+
+
+class RestoreFailedError(RestoreError):
+    """Restore operation failed."""

@@ -14,6 +14,7 @@ from models.material import Material
 from models.question import Question
 from models.student_identity import StudentIdentity
 from models.submission import Submission
+from services.authorization_service import AuthContext
 from services.exceptions import (
     AssessmentAlreadyFinalizedError,
 )
@@ -129,16 +130,16 @@ class TestFinalizationValidation:
 
     def test_second_finalization_blocked(self, session: Session) -> None:
         data = _setup_base(session)
-        finalize_assessment(session, data["assessment"].id)
+        finalize_assessment(session, data["assessment"].id, auth_ctx=_ADMIN_AUTH)
         try:
-            finalize_assessment(session, data["assessment"].id)
+            finalize_assessment(session, data["assessment"].id, auth_ctx=_ADMIN_AUTH)
             assert False, "Should have raised"
         except AssessmentAlreadyFinalizedError:
             pass
 
     def test_timestamp_stored(self, session: Session) -> None:
         data = _setup_base(session)
-        result = finalize_assessment(session, data["assessment"].id)
+        result = finalize_assessment(session, data["assessment"].id, auth_ctx=_ADMIN_AUTH)
         assert result.finalized_at is not None
         assessment = session.query(Assessment).filter(Assessment.id == data["assessment"].id).first()
         assert assessment is not None
@@ -149,5 +150,7 @@ class TestFinalizationValidation:
         sub = session.query(Submission).filter(Submission.id == data["sub"].id).first()
         assert sub is not None
         sub.source_grade = Decimal("999"); session.flush()
-        result = finalize_assessment(session, data["assessment"].id)
+        result = finalize_assessment(session, data["assessment"].id, auth_ctx=_ADMIN_AUTH)
         assert result.final_grade_total == Decimal("90")
+
+_ADMIN_AUTH = AuthContext(user_id="test-admin", role="administrator")

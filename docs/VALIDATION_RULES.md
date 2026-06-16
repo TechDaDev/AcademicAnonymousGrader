@@ -134,28 +134,32 @@
 
 | ID | Description | Severity | When It Runs | Blocks |
 |----|-------------|----------|--------------|--------|
-| FL001 | All responses must have a non-null score. | Error | Before finalisation | Finalisation |
-| FL002 | All scores must be within valid ranges (0 to question max). | Error | Before finalisation | Finalisation |
-| FL003 | Every anonymous student must have a valid identity mapping. | Error | Before finalisation | Finalisation |
-| FL004 | Assessment must have at least one question. | Error | Before finalisation | Finalisation |
-| FL005 | Assessment must have at least one graded submission. | Error | Before finalisation | Finalisation |
-| FL006 | Final totals must be recalculated rather than trusted from the source file. | Information | During finalisation | — |
-| FL007 | Source grades are informational unless explicitly imported as approved grades. | Information | During import | — |
-| FL008 | Finalisation requires explicit lecturer confirmation. | Error | Finalisation action | Finalisation |
-| FL009 | Finalisation action must be recorded in the audit log. | Error | Finalisation action | Finalisation |
+| FA001 | Assessment must have at least one question defined. | Error | Readiness check | Finalisation |
+| FA002 | Sum of question maximum grades must equal assessment maximum grade. | Error | Readiness check | Finalisation |
+| FA003 | Assessment must have at least one submission. | Error | Readiness check | Finalisation |
+| FA004 | Every submission must have an associated anonymous student. | Error | Readiness check | Finalisation |
+| FA005 | All submissions must be in "approved" review status. | Error | Readiness check | Finalisation |
+| FA006 | A GradeRecord must exist for every (submission, question) pair. | Error | Readiness check | Finalisation |
+| FA007 | GradeRecord grade must not be null. | Error | Readiness check | Finalisation |
+| FA008 | GradeRecord grade must not be negative. | Error | Readiness check | Finalisation |
+| FA009 | GradeRecord grade must not exceed the question maximum grade. | Error | Readiness check | Finalisation |
+| FA010 | GradeRecord grading_status must be "graded". | Error | Readiness check | Finalisation |
+| FA011 | Submission total grade must not exceed assessment maximum grade. | Error | Readiness check | Finalisation |
+| FA012 | Explicit lecturer confirmation checkbox must be checked. | Error | Finalisation action | Finalisation |
+| FA013 | Assessment must not already be finalized. | Error | Finalisation action | Finalisation |
 
 ## Export Validation
 
 | ID | Description | Severity | When It Runs | Blocks |
 |----|-------------|----------|--------------|--------|
-| E001 | Assessment must be in "finalised" status for standard export. | Error | Before export | Export |
-| E002 | Reopened assessments must be re-finalised before export. | Error | Before export | Export |
-| E003 | Exported totals must match database totals. | Error | During export | Export |
-| E004 | Export rows must not duplicate students unintentionally. | Error | During export | Export |
-| E005 | Export requires explicit lecturer confirmation of identity restoration. | Error | Before export | Export |
-| E006 | Export action must be recorded in the export log and audit log. | Error | Export action | Export |
-| E007 | All exported text beginning with `=`, `+`, `-`, or `@` must be escaped to prevent formula injection. | Error | During export | Export |
-| E008 | The number of exported rows must match the number of graded submissions. | Warning | After export | — |
+| E001 | Assessment must be in "finalized" status (finalization_status = "finalized"). | Error | Before export | Export |
+| E002 | Assessment must have at least one question defined. | Error | Before export | Export |
+| E003 | Assessment must have at least one submission. | Error | Before export | Export |
+| E004 | Every submission must have an associated anonymous student. | Error | During export | Export |
+| E005 | A GradeRecord must exist for every (submission, question) pair. | Error | During export | Export |
+| E006 | GradeRecord grade must not be null. | Error | During export | Export |
+| E007 | Encryption key must be available to decrypt identities for export. | Error | Before export | Export |
+| E008 | All exported text beginning with `=`, `+`, `-`, or `@` must be escaped with a leading `'` to prevent formula injection. | Error | During export | Export |
 
 ## Summary Table
 
@@ -169,6 +173,6 @@
 | Submission | 6 | 0 | 5 | 1 |
 | Response | 4 | 2 | 1 | 1 |
 | Grade | 8 | 5 | 2 | 1 |
-| Finalisation | 9 | 7 | 0 | 2 |
-| Export | 8 | 6 | 1 | 1 |
-| **Total** | **82** | **49** | **21** | **12** |
+| Finalisation | 13 | 13 | 0 | 0 |
+| Export | 8 | 8 | 0 | 0 |
+| **Total** | **86** | **57** | **20** | **9** |

@@ -15,6 +15,7 @@ from models.material import Material
 from models.question import Question
 from models.student_identity import StudentIdentity
 from models.submission import Submission
+from services.authorization_service import AuthContext
 from services.exceptions import (
     AssessmentAlreadyFinalizedError,
 )
@@ -48,7 +49,7 @@ def _setup_approved(session: Session) -> dict:  # type: ignore[type-arg]
 class TestFinalizationReadiness:
     def test_ready_assessment_finalizes(self, session: Session) -> None:
         data = _setup_approved(session)
-        result = finalize_assessment(session, data["assessment"].id)
+        result = finalize_assessment(session, data["assessment"].id, auth_ctx=_ADMIN_AUTH)
         assert result.status == "finalized"
         assert result.submission_count == 1
         assert result.final_grade_total == Decimal("90")
@@ -99,13 +100,13 @@ class TestFinalizationReadiness:
 
     def test_second_finalization_blocked(self, session: Session) -> None:
         data = _setup_approved(session)
-        finalize_assessment(session, data["assessment"].id)
+        finalize_assessment(session, data["assessment"].id, auth_ctx=_ADMIN_AUTH)
         with pytest.raises(AssessmentAlreadyFinalizedError):
-            finalize_assessment(session, data["assessment"].id)
+            finalize_assessment(session, data["assessment"].id, auth_ctx=_ADMIN_AUTH)
 
     def test_finalization_timestamp_stored(self, session: Session) -> None:
         data = _setup_approved(session)
-        result = finalize_assessment(session, data["assessment"].id)
+        result = finalize_assessment(session, data["assessment"].id, auth_ctx=_ADMIN_AUTH)
         assert result.finalized_at is not None
         assessment = session.query(Assessment).filter(Assessment.id == data["assessment"].id).first()
         assert assessment is not None
@@ -118,7 +119,7 @@ class TestFinalizationReadiness:
         assert sub is not None
         sub.source_grade = Decimal("999")  # Should be ignored
         session.flush()
-        result = finalize_assessment(session, data["assessment"].id)
+        result = finalize_assessment(session, data["assessment"].id, auth_ctx=_ADMIN_AUTH)
         assert result.final_grade_total == Decimal("90")
 
     def test_question_total_mismatch_blocks(self, session: Session) -> None:
@@ -133,7 +134,7 @@ class TestFinalizationReadiness:
 class TestFinalizedSummary:
     def test_summary_returns_data(self, session: Session) -> None:
         data = _setup_approved(session)
-        finalize_assessment(session, data["assessment"].id)
+        finalize_assessment(session, data["assessment"].id, auth_ctx=_ADMIN_AUTH)
         summary = get_finalized_assessment_summary(session, data["assessment"].id)
         assert summary is not None
         assert summary.total_submissions == 1
@@ -148,9 +149,11 @@ class TestFinalizedSummary:
 class TestFinalizedIntegrity:
     def test_integrity_passes(self, session: Session) -> None:
         data = _setup_approved(session)
-        finalize_assessment(session, data["assessment"].id)
+        finalize_assessment(session, data["assessment"].id, auth_ctx=_ADMIN_AUTH)
         assert verify_finalized_integrity(session, data["assessment"].id) is True
 
     def test_integrity_fails_if_not_finalized(self, session: Session) -> None:
         data = _setup_approved(session)
         assert verify_finalized_integrity(session, data["assessment"].id) is False
+
+_ADMIN_AUTH = AuthContext(user_id="test-admin", role="administrator")

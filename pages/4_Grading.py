@@ -21,6 +21,7 @@ from services.grading_service import (
 from services.logging_service import get_logger
 from services.material_service import list_materials
 from ui.layout import configure_page, render_app_header, render_safe_error
+from ui.session import require_authentication, require_page_access_safe
 
 logger = get_logger("grading_page")
 
@@ -187,6 +188,8 @@ def _render_grading_panel(view: SubmissionGradingView) -> tuple[bool, bool]:
 
 def main() -> None:
     configure_page("Grading")
+    require_authentication()
+    require_page_access_safe("Grading")
     render_app_header()
     st.subheader("✏️ Anonymous Grading")
     st.caption("Grade imported submissions without seeing student identities.")

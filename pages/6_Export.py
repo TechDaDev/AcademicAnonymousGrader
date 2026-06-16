@@ -21,6 +21,7 @@ import streamlit as st
 from config import get_settings
 from database.engine import get_engine
 from database.session import create_session_factory, session_scope
+from services.authorization_service import get_auth_context
 from services.excel_export_service import generate_export_workbook
 from services.exceptions import (
     AssessmentAlreadyFinalizedError,
@@ -38,6 +39,7 @@ from services.logging_service import get_logger
 from services.material_service import list_materials
 from services.review_service import list_reviewable_assessments
 from ui.layout import configure_page, render_app_header, render_safe_error
+from ui.session import render_logout_button, require_authentication
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
@@ -98,8 +100,9 @@ def _render_finalized_summary(assessment_id: str, factory: sessionmaker) -> None
 
     if st.button("📥 Generate Workbook", type="primary", use_container_width=True):
         try:
+            auth_ctx = get_auth_context(st.session_state)
             with session_scope(factory) as session:
-                result = generate_export_workbook(session, assessment_id, settings)
+                result = generate_export_workbook(session, assessment_id, settings, auth_ctx=auth_ctx)
 
             # Show export metadata
             st.success("✅ Workbook generated successfully!")
@@ -174,6 +177,11 @@ def _render_finalized_summary(assessment_id: str, factory: sessionmaker) -> None
 def main() -> None:
     """Main entry point for the Export page."""
     configure_page("Export")
+    require_authentication()
+    from services.authorization_service import require_page_access
+
+    require_page_access(st.session_state.get("role", ""), "Export")
+    render_logout_button()
     render_app_header()
     st.subheader("📥 Finalization and Export")
     st.caption("Finalize assessments and generate Excel exports with restored identities.")
@@ -243,7 +251,10 @@ def main() -> None:
             if st.button("🚀 Finalize Assessment", type="primary", use_container_width=True):
                 try:
                     with session_scope(factory) as session:
-                        result = finalize_assessment(session, assessment.id)
+                        result = finalize_assessment(
+                            session, assessment.id,
+                            auth_ctx=get_auth_context(st.session_state),
+                        )
                     st.success(f"✅ Assessment finalized at {result.finalized_at}!")
                     st.rerun()
                 except AssessmentAlreadyFinalizedError as exc:

@@ -1,13 +1,13 @@
-"""Preview-only import service for Phase 3."""
+"""Preview-only import service for Phase 3–9 (HTML, XLSX, CSV)."""
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from hashlib import sha256
 
 from config import get_settings
 from parsers.base import ParserLimits
-from parsers.html_parser import HtmlImportParser
 from parsers.models import (
     ColumnClassification,
     MappingValidation,
@@ -16,6 +16,7 @@ from parsers.models import (
     ReconciliationResult,
     ValidationSeverity,
 )
+from parsers.parser_registry import get_parser_for_filename
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,12 +40,31 @@ def build_parser_limits() -> ParserLimits:
     )
 
 
-def preview_html_import(file_bytes: bytes, source_filename: str, table_index: int | None = None) -> ImportPreviewResult:
-    """Parse an uploaded file and return a UI-safe preview result.
+def preview_import(file_bytes: bytes, source_filename: str, table_index: int | None = None) -> ImportPreviewResult:
+    """Parse an uploaded file (HTML, XLSX, or CSV) and return a UI-safe preview result.
 
-    If table_index is provided, only that table is considered.
+    Uses the parser registry to select the correct parser by file extension.
+
+    Parameters
+    ----------
+    file_bytes : bytes
+        Raw file content.
+    source_filename : str
+        Original filename including extension.
+    table_index : int | None
+        For HTML: table index. For XLSX: sheet index into visible sheets.
+
+    Returns
+    -------
+    ImportPreviewResult
+        Normalized preview result.
+
+    Raises
+    ------
+    ImportParserError
+        If the file cannot be parsed or format is unsupported.
     """
-    parser = HtmlImportParser()
+    parser = get_parser_for_filename(source_filename)
     parsed_import = parser.parse(
         file_bytes, source_filename, limits=build_parser_limits(), table_index=table_index
     )
@@ -56,6 +76,10 @@ def preview_html_import(file_bytes: bytes, source_filename: str, table_index: in
         file_name=source_filename,
         ready_for_phase4=ready_for_phase4,
     )
+
+
+# Keep backward-compatible alias
+preview_html_import = preview_import
 
 
 def reconcile_assessment(
@@ -73,124 +97,135 @@ def reconcile_assessment(
     missing = sorted(question_set - mapped_set)
     extra = sorted(mapped_set - question_set)
 
-    from collections import Counter
     counts = Counter(mapped_numbers)
     duplicates = sorted(n for n, c in counts.items() if c > 1)
 
     non_consec = False
     if mapped_numbers:
-        sorted_mapped = sorted(mapped_numbers)
-        for i in range(len(sorted_mapped) - 1):
-            if sorted_mapped[i + 1] - sorted_mapped[i] > 1:
+        sorted_mapped = sorted(set(mapped_numbers))
+        expected = list(range(sorted_mapped[0], sorted_mapped[-1] + 1))
+        # Only flag non-consecutive if the gap is not in the assessment itself
+        if sorted_mapped != expected:
+            # Check if the gaps correspond to gaps in the assessment question numbers
+            sorted_questions = sorted(set(assessment_question_numbers))
+            if sorted_questions != expected:
+                # Assessment itself is non-consecutive — mapped numbers should
+                # match the assessment's structure instead of a full range
+                non_consec = sorted_mapped != sorted_questions
+            else:
                 non_consec = True
-                break
 
-    unresolved = bool(missing or extra or duplicates)
-    exact_match = not unresolved and bool(mapped_numbers)
+    unresolved = bool(missing or duplicates or non_consec)
 
-    if exact_match:
-        message = "All response columns match the assessment questions."
-    elif unresolved:
-        parts = []
-        if missing:
-            parts.append(f"Missing question number(s): {missing}")
-        if extra:
-            parts.append(f"Extra response column number(s): {extra}")
-        if duplicates:
-            parts.append(f"Duplicate response number(s): {duplicates}")
-        message = "; ".join(parts) + "." if parts else "Reconciliation unresolved."
-    else:
-        message = "No response columns mapped yet."
+    parts: list[str] = []
+    if missing:
+        parts.append(f"Missing question(s): {missing}")
+    if duplicates:
+        parts.append(f"Duplicate response column(s): {duplicates}")
+    if non_consec:
+        parts.append("Response columns are not consecutive.")
+    if not unresolved:
+        parts.append("All questions matched.")
 
     return ReconciliationResult(
-        exact_match=exact_match,
-        mapped_response_numbers=tuple(sorted(mapped_numbers)),
+        exact_match=not unresolved and not extra,
+        mapped_response_numbers=tuple(sorted(set(mapped_numbers))),
         assessment_question_numbers=assessment_question_numbers,
         missing_question_numbers=tuple(missing),
         extra_response_numbers=tuple(extra),
         duplicate_response_numbers=tuple(duplicates),
         non_consecutive=non_consec,
         unresolved=unresolved,
-        message=message,
+        message=" | ".join(parts),
     )
 
 
-def validate_mapping(parsed_import: ParsedImport) -> MappingValidation:
-    """Validate the column mapping configuration."""
+def validate_mapping(
+    parsed_import: ParsedImport,
+) -> MappingValidation:
+    """Validate that the column mapping has required identity and response columns."""
     messages: list[ParsedValidationMessage] = []
-    seen_identity_fields: dict[str, list[str]] = {}
-    seen_response_numbers: dict[int, list[str]] = {}
+    identity_fields: set[str] = set()
+    response_numbers: list[int] = []
+    duplicate_identity: list[str] = []
+    duplicate_response_nums: list[int] = []
     has_identity = False
     has_responses = False
+
+    seen_identity: dict[str, int] = {}
+    seen_responses: set[int] = set()
 
     for col in parsed_import.columns:
         if col.classification is ColumnClassification.IDENTITY and col.mapped_field:
             has_identity = True
-            if col.mapped_field not in seen_identity_fields:
-                seen_identity_fields[col.mapped_field] = []
-            seen_identity_fields[col.mapped_field].append(col.original_name)
-        if col.classification is ColumnClassification.RESPONSE:
+            if col.mapped_field in seen_identity:
+                duplicate_identity.append(col.mapped_field)
+            seen_identity[col.mapped_field] = seen_identity.get(col.mapped_field, 0) + 1
+            identity_fields.add(col.mapped_field)
+
+        if col.classification is ColumnClassification.RESPONSE and col.response_number is not None:
             has_responses = True
-            rn = col.response_number
-            if rn is not None:
-                if rn not in seen_response_numbers:
-                    seen_response_numbers[rn] = []
-                seen_response_numbers[rn].append(col.original_name)
-
-    dup_identity = tuple(f for f, cols in seen_identity_fields.items() if len(cols) > 1)
-    dup_responses = tuple(n for n, cols in seen_response_numbers.items() if len(cols) > 1)
-
-    for field in dup_identity:
-        messages.append(ParsedValidationMessage(
-            code="M001",
-            severity=ValidationSeverity.WARNING,
-            message=f"Multiple columns mapped to '{field}': {seen_identity_fields[field]}",
-            blocking_stage="column mapping",
-        ))
-
-    for num in dup_responses:
-        messages.append(ParsedValidationMessage(
-            code="M002",
-            severity=ValidationSeverity.ERROR,
-            message=f"Multiple columns mapped to response number {num}: {seen_response_numbers[num]}",
-            blocking_stage="column mapping",
-        ))
+            if col.response_number in seen_responses:
+                duplicate_response_nums.append(col.response_number)
+            seen_responses.add(col.response_number)
+            response_numbers.append(col.response_number)
 
     if not has_identity:
-        messages.append(ParsedValidationMessage(
-            code="M003",
-            severity=ValidationSeverity.ERROR,
-            message="No identity columns mapped",
-            blocking_stage="column mapping",
-        ))
-
+        messages.append(
+            ParsedValidationMessage(
+                code="M001",
+                severity=ValidationSeverity.ERROR,
+                message=(
+                    "No identity columns mapped. Map at least one of: "
+                    "first name, last name, email, or institutional ID."
+                ),
+                blocking_stage="mapping",
+            )
+        )
     if not has_responses:
-        messages.append(ParsedValidationMessage(
-            code="M004",
-            severity=ValidationSeverity.ERROR,
-            message="No response columns mapped",
-            blocking_stage="column mapping",
-        ))
+        messages.append(
+            ParsedValidationMessage(
+                code="M002",
+                severity=ValidationSeverity.ERROR,
+                message="No response columns mapped.",
+                blocking_stage="mapping",
+            )
+        )
+    if duplicate_identity:
+        messages.append(
+            ParsedValidationMessage(
+                code="M003",
+                severity=ValidationSeverity.WARNING,
+                message=f"Duplicate identity mapping: {', '.join(duplicate_identity)}.",
+                blocking_stage="mapping",
+            )
+        )
+    if duplicate_response_nums:
+        messages.append(
+            ParsedValidationMessage(
+                code="M004",
+                severity=ValidationSeverity.ERROR,
+                message=f"Duplicate response numbers: {duplicate_response_nums}.",
+                blocking_stage="mapping",
+            )
+        )
 
-    valid = not any(m.severity is ValidationSeverity.ERROR for m in messages)
     return MappingValidation(
-        valid=valid,
+        valid=has_identity and has_responses and not duplicate_response_nums,
         messages=tuple(messages),
-        duplicate_identity_fields=dup_identity,
-        duplicate_response_numbers=dup_responses,
+        duplicate_identity_fields=tuple(duplicate_identity),
+        duplicate_response_numbers=tuple(duplicate_response_nums),
         has_identity=has_identity,
         has_responses=has_responses,
     )
 
 
 def format_file_size(size_bytes: int) -> str:
-    """Format a byte count for display."""
-    units = ["B", "KB", "MB", "GB"]
-    value = float(size_bytes)
-    unit_index = 0
-    while value >= 1024 and unit_index < len(units) - 1:
-        value /= 1024
-        unit_index += 1
-    if unit_index == 0:
-        return f"{int(value)} {units[unit_index]}"
-    return f"{value:.1f} {units[unit_index]}"
+    """Format file size in a human-readable form."""
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    if size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    if size_bytes < 1024 * 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+    return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"

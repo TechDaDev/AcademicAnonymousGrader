@@ -40,6 +40,7 @@ from services.question_service import (
     update_question,
 )
 from ui.layout import configure_page, render_app_header, render_safe_error
+from ui.session import require_authentication, require_page_access_safe
 
 logger = get_logger("assessments_page")
 
@@ -282,6 +283,8 @@ def _render_assessment_detail(session: Session, assessment_id: str) -> None:
 def main() -> None:
     """Assessments management page."""
     configure_page("Assessments")
+    require_authentication()
+    require_page_access_safe("Assessments")
     render_app_header()
     st.subheader("📝 Assessments")
 

@@ -1,68 +1,105 @@
 # Academic Anonymous Grader — Main Application Entry Point
-"""Phase 3 — HTML Parser.
+"""Phase 8 — Authentication, Authorization, Audit, and Backup.
 
-Materials, assessments, and questions can now be created and managed.
-HTML import preview is available. Grading and export remain future phases.
+Login page for unauthenticated users. Dashboard for authenticated users.
 """
 
 from __future__ import annotations
 
-import streamlit as st
+from typing import Any
 
-from config import get_settings
+import streamlit as st
+from sqlalchemy.engine import Engine
+
+from config import Settings, get_settings
 from database.engine import get_engine
 from database.init_db import initialize_database
 from database.session import create_session_factory, session_scope
+from services.audit_service import ACTION_LOGIN_FAILURE, ACTION_LOGIN_SUCCESS, record_audit_event
+from services.auth_service import authenticate_user
 from services.dashboard_service import get_dashboard_stats
-from services.logging_service import configure_logging
+from services.exceptions import AccountDisabledError, AccountLockedError, InvalidCredentialsError
+from services.logging_service import configure_logging, get_logger
 from ui.components import render_foundation_warning, render_metric_card
 from ui.layout import configure_page, render_app_header, render_safe_error
+from ui.session import (
+    check_session_timeout,
+    get_current_role,
+    init_session_state,
+    is_authenticated,
+    login_user,
+    logout_user,
+    update_activity,
+)
+
+logger = get_logger("app")
 
 
-def main() -> None:
-    """Application entry point."""
-    configure_page()
-    render_app_header()
+def _render_login(
+    settings: Settings, engine: Engine, factory: Any
+) -> None:
+    """Render the login form."""
+    st.subheader("🔐 Login")
+    st.markdown("Please log in to access the Academic Anonymous Grader.")
 
-    # ------------------------------------------------------------------
-    # Startup: load settings, configure logging, create dirs, init DB
-    # ------------------------------------------------------------------
-    try:
-        settings = get_settings()
-    except ValueError as exc:
-        render_safe_error(f"Configuration error: {exc}")
-        st.stop()
+    with st.form("login_form"):
+        username = st.text_input("Username", placeholder="Enter your username")
+        password = st.text_input("Password", type="password", placeholder="Enter your password")
+        submitted = st.form_submit_button("Login", use_container_width=True)
 
-    # Configure logging
-    logger = configure_logging(
-        log_file=settings.resolved_log_file,
-        log_level=settings.log_level,
+    if submitted:
+        if not username or not password:
+            render_safe_error("Please enter both username and password.")
+            return
+
+        try:
+            with session_scope(factory) as session:
+                user = authenticate_user(session, username, password)
+                login_user(user.id, user.username, user.role, user.display_name)
+                record_audit_event(
+                    session,
+                    action=ACTION_LOGIN_SUCCESS,
+                    user_id=user.id,
+                    username_snapshot=user.username,
+                    outcome="success",
+                )
+            st.rerun()
+        except InvalidCredentialsError as exc:
+            # Record failure (generic — no username enumeration)
+            with session_scope(factory) as session:
+                record_audit_event(
+                    session,
+                    action=ACTION_LOGIN_FAILURE,
+                    username_snapshot="unknown",
+                    outcome="failure",
+                    reason_code="INVALID_CREDENTIALS",
+                )
+            render_safe_error(str(exc))
+        except AccountLockedError as exc:
+            with session_scope(factory) as session:
+                record_audit_event(
+                    session,
+                    action=ACTION_LOGIN_FAILURE,
+                    username_snapshot="unknown",
+                    outcome="failure",
+                    reason_code="ACCOUNT_LOCKED",
+                )
+            render_safe_error(str(exc))
+        except AccountDisabledError as exc:
+            render_safe_error(str(exc))
+        except Exception:
+            logger.exception("Login error")
+            render_safe_error("An unexpected error occurred. Please try again.")
+
+    st.divider()
+    st.info(
+        "⚠️ **No account yet?** Run the bootstrap command to create the first administrator:\n\n"
+        "```bash\npython -m scripts.create_admin\n```"
     )
-    logger.info("Starting Academic Anonymous Grader — Phase 3")
 
-    try:
-        settings.create_directories(settings)
-    except OSError as exc:
-        logger.error("Failed to create required directories: %s", exc)
-        render_safe_error("Could not create required application directories.")
-        st.stop()
 
-    # Initialize database
-    try:
-        database_url = settings.resolved_database_url()
-        engine = get_engine(database_url, echo=settings.app_debug)
-        initialize_database(engine)
-        logger.info("Database initialized successfully")
-    except Exception as exc:
-        logger.error("Database initialization failed: %s", exc)
-        render_safe_error("Database initialization failed. Check configuration and permissions.")
-        st.stop()
-
-    # ------------------------------------------------------------------
-    # Dashboard display
-    # ------------------------------------------------------------------
-    session_factory = create_session_factory(engine)
-
+def _render_dashboard(settings: Settings, engine: Engine, session_factory: Any) -> None:  # noqa: ANN401
+    """Render the dashboard for authenticated users."""
     try:
         with session_scope(session_factory) as session:
             stats = get_dashboard_stats(session)
@@ -109,9 +146,151 @@ def main() -> None:
         db_status = "✅ Connected" if engine else "❌ Not connected"
         st.markdown(f"**Database:** {db_status}")
     with info_col3:
-        st.markdown("**Current Phase:** `Phase 3 — HTML Parser`")
+        st.markdown(f"**User:** `{st.session_state.get('username', 'Unknown')}` ({st.session_state.get('role', '?')})")
 
     render_foundation_warning()
+
+
+def main() -> None:
+    """Application entry point."""
+    configure_page()
+    init_session_state()
+
+    # ------------------------------------------------------------------
+    # Startup: load settings, configure logging, create dirs, init DB
+    # ------------------------------------------------------------------
+    try:
+        settings = get_settings()
+    except ValueError as exc:
+        render_safe_error(f"Configuration error: {exc}")
+        st.stop()
+
+    # Configure logging
+    configure_logging(
+        log_file=settings.resolved_log_file,
+        log_level=settings.log_level,
+    )
+    logger.info("Starting Academic Anonymous Grader — Phase 8")
+
+    try:
+        settings.create_directories(settings)
+    except OSError as exc:
+        logger.error("Failed to create required directories: %s", exc)
+        render_safe_error("Could not create required application directories.")
+        st.stop()
+
+    # Initialize database
+    try:
+        database_url = settings.resolved_database_url()
+        engine = get_engine(database_url, echo=settings.app_debug)
+        initialize_database(engine)
+        logger.info("Database initialized successfully")
+    except Exception as exc:
+        logger.error("Database initialization failed: %s", exc)
+        render_safe_error("Database initialization failed. Check configuration and permissions.")
+        st.stop()
+
+    session_factory = create_session_factory(engine)
+
+    # Render header
+    render_app_header()
+
+    # ------------------------------------------------------------------
+    # Authentication gate
+    # ------------------------------------------------------------------
+    if not is_authenticated():
+        _render_login(settings, engine, session_factory)
+        return
+
+    # Check session timeout
+    if not check_session_timeout():
+        st.warning(
+            f"Your session has expired due to inactivity "
+            f"(timeout: {settings.session_timeout_minutes} minutes). "
+            "Please log in again."
+        )
+        logout_user()
+        st.rerun()
+        return
+
+    # Update activity timestamp
+    update_activity()
+
+    # ------------------------------------------------------------------
+    # Role-aware sidebar navigation
+    # ------------------------------------------------------------------
+    # Hide default auto-generated page navigation
+    st.markdown(
+        """
+        <style>
+        section[data-testid="stSidebar"] nav { display: none !important; }
+        section[data-testid="stSidebar"] ul[data-testid="stSidebarNav"] { display: none !important; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    from services.authorization_service import can_access_page, display_role
+
+    role = get_current_role()
+    role_display = display_role(role)
+
+    st.sidebar.markdown(f"**Logged in as:** {st.session_state.get('username', '')}")
+    st.sidebar.caption(f"Role: {role_display}")
+    st.sidebar.divider()
+
+    # Build role-aware sidebar with markdown links
+    if can_access_page(role, "Users"):
+        links = [
+            ("🏠 Dashboard", "/"),
+            ("📦 Materials", "/Materials"),
+            ("📝 Assessments", "/Assessments"),
+            ("📥 Import", "/Import"),
+            ("✏️ Grading", "/Grading"),
+            ("🔍 Review", "/Review"),
+            ("📤 Export", "/Export"),
+            ("👥 Users", "/Users"),
+            ("📋 Audit", "/Audit"),
+            ("💾 Backup", "/Backup"),
+            ("⚙️ Settings", "/Settings"),
+        ]
+    elif can_access_page(role, "Grading"):
+        links = [
+            ("🏠 Dashboard", "/"),
+            ("✏️ Grading", "/Grading"),
+        ]
+    else:
+        links = [("🏠 Dashboard", "/")]
+
+    for label, url in links:
+        st.sidebar.markdown(f"[{label}]({url})")
+
+    st.sidebar.divider()
+
+    # Logout
+    if st.sidebar.button("🚪 Logout", use_container_width=True):
+        from database.engine import get_engine as _ge
+        from database.session import create_session_factory as _csf
+        from database.session import session_scope as _ss
+        from services.audit_service import ACTION_LOGOUT
+        from services.audit_service import record_audit_event as _rae
+
+        user_id = st.session_state.get("user_id")
+        username = st.session_state.get("username")
+        try:
+            eng = _ge(settings.resolved_database_url())
+            fac = _csf(eng)
+            with _ss(fac) as s:
+                _rae(s, action=ACTION_LOGOUT, user_id=user_id, username_snapshot=username, outcome="success")
+        except Exception:  # noqa: S110
+            pass
+        logout_user()
+        st.rerun()
+
+    # ------------------------------------------------------------------
+    # Dashboard display
+    # ------------------------------------------------------------------
+    _render_dashboard(settings, engine, session_factory)
 
     logger.info("Dashboard rendered successfully")
 

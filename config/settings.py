@@ -83,6 +83,20 @@ class Settings:
         default_factory=lambda: os.getenv("IDENTITY_FINGERPRINT_KEY", "")
     )
 
+    # Phase 8 session and backup settings
+    session_timeout_minutes: int = field(
+        default_factory=lambda: _env_int("SESSION_TIMEOUT_MINUTES", 30)
+    )
+    backup_password: str = field(
+        default_factory=lambda: os.getenv("BACKUP_PASSWORD", "")
+    )
+    max_failed_login_attempts: int = field(
+        default_factory=lambda: _env_int("MAX_FAILED_LOGIN_ATTEMPTS", 5)
+    )
+    lockout_duration_minutes: int = field(
+        default_factory=lambda: _env_int("LOCKOUT_DURATION_MINUTES", 15)
+    )
+
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         valid_envs = {"development", "testing", "production"}

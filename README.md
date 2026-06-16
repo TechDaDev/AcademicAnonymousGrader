@@ -6,26 +6,35 @@ A lightweight, locally run tool that imports assessment response files from a le
 
 ---
 
-## Current Status: Phase 7 — Finalization and Excel Export
+## Current Status: Revised Authorization — Administrator & Instructor
 
-Phase 7 implements assessment finalization, final-grade locking, and secure Excel export with identity restoration.
+The application uses two operational roles:
+- **Administrator** — full access to materials, assessments, import, grading, review, finalization, export (with identity restoration), users, audit, backup, restore, and settings
+- **Instructor** — anonymous grading only; never sees student identity; cannot import, export, manage users, or access administrative functions
 
-### What Phase 7 Implements
+Legacy roles (`reviewer`, `exporter`, `viewer`) exist in the database for backward compatibility but are **not assignable** to new users. They are stripped of operational permissions.
 
-- **Finalization readiness** — validation checks FA001–FA011 covering submissions, approval, GradeRecords, and grade integrity
-- **Explicit finalization** — confirmation checkbox required, grades locked after finalization
-- **Service-layer locking** — grading edits, review actions, and imports blocked on finalized assessments
-- **Excel workbook generation** — 4 sheets: Final Grades, Question Grades, Feedback, Export Summary
-- **Identity restoration for export only** — AES-256-GCM decryption during workbook generation, never stored back
-- **Formula injection prevention** — `=`, `+`, `-`, `@` prefix protection on all identity and feedback values
-- **ExportRecord tracking** — SHA-256 hash, row count, file size; no workbook bytes or identity stored in DB
-- **Re-export support** — unlimited re-exports without modifying grades or finalization state
-- **Professional workbook formatting** — bold headers, freeze panes, auto-filter, decimal/percentage/date formats
-- **554 automated tests**
+### Role Display
 
-### What Phase 6 Implements
+The internal role value `grader` is displayed to users as **Instructor**. Legacy roles display with a `(legacy)` tag.
 
-- **Review statuses** — `not_ready`, `ready_for_review`, `needs_correction`, `approved` per submission
+### Access Control
+
+- All pages enforce authentication and role-based access at the entry point
+- Unauthorized direct URL access is rejected with a safe error message
+- Service-layer functions require a valid `AuthContext` — missing context raises an error
+- The last active Administrator cannot be deactivated or downgraded
+- **Authorization** — administrator and grader only
+- **24 new automated tests**
+- **838 total automated tests**
+
+### What Phase 7 Implements (prior)
+
+- Finalization readiness — validation checks FA001–FA011
+- Explicit finalization with locking
+- Excel workbook generation (4 sheets)
+- Identity restoration for export only
+- Re-export support
 
 - **Anonymous grading workflow** — select assessment, view submissions, grade questions
 - **GradeRecord per submission+question** — unique constraint prevents duplicates

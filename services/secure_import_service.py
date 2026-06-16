@@ -23,6 +23,7 @@ from security.exceptions import MissingEncryptionKeyError, MissingFingerprintKey
 from security.fingerprint import fingerprint_email, fingerprint_institutional_id
 from security.key_validation import load_keys
 from security.models import FingerprintKey
+from services.authorization_service import PERM_IMPORT_EXECUTE, AuthContext, authorize_context
 from services.identity_matching_service import (
     MatchResult,
     MatchResultType,
@@ -162,21 +163,40 @@ def execute_secure_import(
     source_filename: str,
     table_index: int | None,
     manual_decisions: ManualDecision | None = None,
+    *,
+    auth_ctx: AuthContext,
 ) -> SecureImportResult:
-    """Execute a secure import within a single transaction.    # Block import into finalized assessments
-    assessment = session.query(Assessment).filter(Assessment.id == assessment_id).first()
-    if assessment and assessment.finalization_status == "finalized":
-        raise SecureImportError(
-            f"Assessment {assessment_id[:8]} is finalized. Import is blocked."
-        )
-    Must be called within an active session transaction.
-    The caller is responsible for commit/rollback.
+    """Execute a secure import within a single transaction.
 
-    manual_decisions maps row references to decisions:
-      "match:<identity_id>" — match existing identity
-      "create_new" — create new identity
-      "skip" — skip this row
+    Parameters
+    ----------
+    session : Session
+        Database session.
+    parsed : ParsedImport
+        Normalized parsed import data.
+    assessment_id : str
+        Target assessment ID.
+    assessment_question_numbers : tuple[int, ...]
+        Question numbers for the assessment.
+    file_bytes : bytes
+        Original file bytes (for duplicate detection).
+    source_filename : str
+        Original filename.
+    table_index : int | None
+        Table/sheet index used.
+    manual_decisions : ManualDecision | None
+        Manual identity matching decisions.
+    auth_ctx : AuthContext
+        Authorization context. Enforces import_execute permission.
+
+    Raises
+    ------
+    InsufficientPermissionsError
+        If auth_ctx role lacks PERM_IMPORT_EXECUTE.
     """
+    authorize_context(auth_ctx, PERM_IMPORT_EXECUTE)
+
+    # Block import into finalized assessments
     settings = get_settings()
     enc_key, fp_key = load_keys(
         settings.identity_encryption_key,

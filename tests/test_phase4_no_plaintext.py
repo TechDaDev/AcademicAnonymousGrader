@@ -33,7 +33,10 @@ from security.key_validation import (
     generate_encryption_key,
     generate_fingerprint_key,
 )
+from services.authorization_service import AuthContext
 from services.secure_import_service import execute_secure_import
+
+_ADMIN_AUTH = AuthContext(user_id="test-admin", role="administrator")
 
 # ── Unique identity markers for plaintext audit ────────────────────
 UNIQUE_FIRSTNAME = "UNIQUE_FIRSTNAME_PHASE4_MARKER"
@@ -170,6 +173,7 @@ class TestRawDatabasePlaintextAudit:
                 file_bytes=file_bytes,
                 source_filename="plaintext_audit.html",
                 table_index=0,
+                auth_ctx=_ADMIN_AUTH,
             )
 
             session.commit()

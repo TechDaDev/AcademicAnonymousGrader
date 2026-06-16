@@ -112,17 +112,17 @@
 
 ---
 
-## Phase 8: Authentication, Audit, and Backup
+## Phase 8: Authentication, Authorization, Audit, and Backup  ✅
 
 | Aspect | Detail |
 |--------|--------|
-| **Goal** | Add lecturer authentication, audit log viewing, and database backup functionality. |
-| **Included work** | Implement authentication system (username/password with hashed passwords); implement login page and session management; protect all pages behind authentication; implement audit event viewing page; implement database backup and restore functionality; implement backup scheduling configuration; enhance `AuditEvent` recording for all major actions. |
-| **Excluded work** | OAuth, LDAP, SSO; multi-user support. |
-| **Dependencies** | Phase 7 (all core features exist to be authenticated and audited). |
-| **Deliverables** | Authentication system; audit log viewer; backup functionality. |
-| **Tests** | Authentication flow tests; audit event recording tests; backup and restore tests. |
-| **Completion conditions** | Authentication prevents unauthorised access; audit events are recorded for all critical actions; backups can be created and restored. |
+| **Goal** | Implement local user authentication, role-based access control, privacy-safe audit logging, and database backup/restore. |
+| **Included work** | User model (bcrypt hashing, account lockout); auth service (login, password change, user management); authorization service (role-based permissions — Administrator & Instructor operational, `grader` displayed as Instructor, legacy roles without operational powers); session management (timeout, login/logout); login UI (generic errors, no enumeration); admin pages (Users, Audit, Backup); audit service (privacy-safe logging, sanitization, query/filter/export); backup service (ZIP with SQLite + manifest, SHA-256, pre-restore backup, guarded restore); bootstrap admin script (`python -m scripts.create_admin`); page-level auth enforcement on all pages (`require_authentication()` + `require_page_access_safe()`); service-layer auth via `authorize_context()`; user-creation UI offers only Administrator and Instructor; legacy-role display and conversion; last-active-administrator protection. |
+| **Excluded work** | Password reset by email; cloud hosting; Moodle API integration; encrypted backup archives; multi-institution tenancy. |
+| **Dependencies** | Phase 7 (finalization, export). |
+| **Deliverables** | `models/user.py`, `models/backup_record.py`; `services/auth_service.py`, `services/authorization_service.py`, `services/audit_service.py`, `services/backup_service.py`; `ui/session.py`; `pages/8_Users.py`, `pages/9_Audit.py`, `pages/10_Backup.py`; `scripts/create_admin.py`; Phase 8 tests. |
+| **Tests** | 218 new tests (778 total). |
+| **Completion conditions** | 778 tests pass; ruff clean; mypy clean on non-test code; login/logout works; role-based access enforced; audit events recorded privacy-safely; backup ZIP valid; restore guarded; bootstrap command works. |
 
 ---
 

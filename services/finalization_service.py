@@ -18,6 +18,7 @@ from models.assessment import Assessment
 from models.grade_record import GradeRecord
 from models.question import Question
 from models.submission import Submission
+from services.authorization_service import PERM_FINALIZE_ASSESSMENT, AuthContext, authorize_context
 from services.exceptions import (
     AssessmentAlreadyFinalizedError,
     AssessmentNotReadyForFinalizationError,
@@ -283,16 +284,32 @@ def finalize_assessment(
     session: Session,
     assessment_id: str,
     finalization_note: str | None = None,
+    *,
+    auth_ctx: AuthContext,
 ) -> FinalizationResult:
     """Finalize an assessment if it passes readiness checks.
 
+    Parameters
+    ----------
+    session : Session
+        Database session.
+    assessment_id : str
+        Assessment ID to finalize.
+    finalization_note : str | None
+        Optional note.
+    auth_ctx : AuthContext
+        Authorization context. Enforces finalize_assessment permission.
+
     Raises
     ------
+    InsufficientPermissionsError
+        If auth_ctx role lacks PERM_FINALIZE_ASSESSMENT.
     AssessmentNotReadyForFinalizationError
         If readiness checks fail.
     AssessmentAlreadyFinalizedError
         If already finalized.
     """
+    authorize_context(auth_ctx, PERM_FINALIZE_ASSESSMENT)
     assessment = _get_assessment(session, assessment_id)
 
     if assessment.finalization_status == "finalized":

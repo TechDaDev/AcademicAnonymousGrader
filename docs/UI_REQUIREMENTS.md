@@ -141,18 +141,20 @@
 7. Review Flag (Yes / No)
 8. Action (Link to Grading page)
 
-### Export
+### Export / Finalize
 
 | Aspect | Detail |
 |--------|--------|
-| **Purpose** | Generate an authorised Excel report with restored identities. |
-| **Displayed information** | Assessment name, status, validation results (pass/fail), student count, grading completion percentage. |
-| **Inputs** | Confirm checkbox ("I understand that this will restore real student identities in the exported file."), export button. |
-| **Actions** | Run validation, confirm identity restoration, export Excel file. |
-| **Validation messages** | See export validation rules (E001–E008). |
-| **Empty state** | "No graded assessments to export." |
-| **Error state** | "Export failed." with details. "Validation failed — blocking errors exist." with list of errors. |
-| **Privacy restrictions** | **Clear warning displayed:** "⚠️ Export Warning: This operation will restore real student identities (names and email addresses) in the generated Excel file. Only proceed if you are authorised to access this data." Confirmation checkbox required. |
+| **Purpose** | Finalize assessment grades and generate an authorised Excel report with restored identities. |
+| **Workflow** | (1) Select material → (2) Select assessment → (3) View finalization readiness → (4) Confirm checkbox → (5) Finalize → (6) Generate workbook → (7) Download or re-export. |
+| **Displayed information** | Total submissions, approved submissions, readiness (pass/fail), blocking errors (FA001–FA013) with codes, warnings, assessment maximum grade, final grade total, average/min/max grades, export reference, row count, file size, SHA-256 hash prefix, export history. |
+| **Inputs** | Assessment selector, confirmation checkbox ("I confirm that all grades and reviews are complete and that finalization will lock grading changes."), Finalize button, Generate Workbook button, Download button. |
+| **Actions** | Run readiness validation, check confirmation, finalize assessment, generate workbook, download Excel file, re-export. |
+| **Validation messages** | See finalization rules FA001–FA013 and export rules E001–E008. |
+| **Empty state** | "No reviewable assessments found for this material." / "Assessment is not finalized yet." |
+| **Error state** | "Assessment is not ready for finalization." with blocking-error list. "Export failed." with details. "Workbook generation failed." with details. |
+| **Privacy restrictions** | **No identities displayed in the browser.** Identities are decrypted only during workbook generation. Confirmation checkbox required before finalization. Generated filename uses `final_grades_{id}.xlsx` — no student names. |
+| **Export history** | Each export creates an `ExportRecord` with export reference, timestamp, row count, file size, and SHA-256 hash prefix. Re-export is allowed and creates a new record without modifying grades or finalization state. |
 
 ### Settings
 
@@ -161,6 +163,42 @@
 | **Purpose** | Configure application settings and perform maintenance. |
 | **Displayed information** | Current settings, database path, backup status. |
 | **Inputs** | Database backup path (text), backup button. |
+
+
+---
+
+## Authorization Model
+
+### Page Access Matrix
+
+| Page | Administrator | Instructor |
+|------|:---:|:---:|
+| Dashboard | ✅ | ✅ |
+| Materials | ✅ | ❌ |
+| Assessments | ✅ | ❌ |
+| Import | ✅ | ❌ |
+| Grading | ✅ | ✅ |
+| Review | ✅ | ❌ |
+| Export | ✅ | ❌ |
+| Users | ✅ | ❌ |
+| Audit | ✅ | ❌ |
+| Backup | ✅ | ❌ |
+| Settings | ✅ | ❌ |
+
+### Operational Roles
+
+- **Administrator** (`administrator`): Full access — materials, assessments, questions, import, grading, review, finalization, export (with identity restoration), users, audit, backup, restore, settings.
+- **Instructor** (`grader`, displayed as Instructor): Anonymous grading only. Views anonymous submissions, enters grades and feedback, saves drafts, marks grading complete, corrects returned submissions. Never sees student identity.
+
+### Legacy Roles
+
+`reviewer`, `exporter`, and `viewer` are legacy. Not assignable to new users. No operational permissions.
+
+### Navigation
+
+- **Administrator sidebar**: Dashboard, Materials, Assessments, Import, Grading, Review, Export, Users, Audit, Backup, Settings, Logout.
+- **Instructor sidebar**: Dashboard, Grading, Logout. Hidden links for unauthorized pages are not rendered. Unauthorized direct URLs are blocked with `require_page_access_safe()` showing a safe error message.
+- **Sidebar rendering**: The sidebar is rendered by `app.py` using `st.sidebar.markdown` links. The default Streamlit page navigation is hidden via CSS. Role-aware `can_access_page()` determines which links are visible for each role.
 | **Actions** | Back up database, view audit log (future), configure identity encryption (future). |
 | **Validation messages** | "Backup path is invalid." / "Backup created successfully." |
 | **Empty state** | N/A (settings always have defaults). |

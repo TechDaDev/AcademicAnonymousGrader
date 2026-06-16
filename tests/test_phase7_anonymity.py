@@ -14,7 +14,10 @@ from models.material import Material
 from models.question import Question
 from models.student_identity import StudentIdentity
 from models.submission import Submission
+from services.authorization_service import AuthContext
 from services.finalization_service import finalize_assessment, get_finalization_readiness
+
+_ADMIN_AUTH = AuthContext(user_id="test-admin", role="administrator")
 
 
 class TestFinalizationAnonymity:
@@ -53,6 +56,6 @@ class TestFinalizationAnonymity:
         session.add(sub); session.flush()
         gr = GradeRecord(submission_id=sub.id, question_id=q1.id, grade=Decimal("90"), grading_status="graded")
         session.add(gr); session.flush()
-        result = finalize_assessment(session, assessment.id)
+        result = finalize_assessment(session, assessment.id, auth_ctx=_ADMIN_AUTH)
         assert result.status == "finalized"
         assert hasattr(result, "submission_count")

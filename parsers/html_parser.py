@@ -48,6 +48,7 @@ class HtmlImportParser(ImportParser):
     """Safe HTML table parser for anonymous response files."""
 
     parser_name = "html-bs4-lxml"
+    SUPPORTED_EXTENSIONS = frozenset({".html", ".htm"})
 
     def parse(
         self,
