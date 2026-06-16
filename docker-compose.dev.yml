@@ -1,0 +1,42 @@
+# Academic Anonymous Grader — Development Docker Compose
+# For local development only — NOT for production use.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: academic-anonymous-grader:dev
+    container_name: academic-anonymous-grader-dev
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=development
+      - APP_DEBUG=true
+      - DATA_DIR=/app/data
+      - DATABASE_PATH=/app/data/grader.db
+      - BACKUP_DIR=/app/backups
+      - EXPORT_DIR=/app/exports
+      - LOG_DIR=/app/logs
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_RUN_ON_SAVE=true
+    volumes:
+      - .:/app
+      - grader_data_dev:/app/data
+      - grader_backups_dev:/app/backups
+      - grader_exports_dev:/app/exports
+      - grader_logs_dev:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-m", "scripts.health_check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  grader_data_dev:
+  grader_backups_dev:
+  grader_exports_dev:
+  grader_logs_dev:

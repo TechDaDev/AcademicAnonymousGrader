@@ -1,11 +1,16 @@
 # Models package — import all models to register them with Base metadata
+from models.academic_stage import AcademicStage as AcademicStage
+from models.academic_term import AcademicTerm as AcademicTerm
+from models.academic_year import AcademicYear as AcademicYear
 from models.anonymous_student import AnonymousStudent as AnonymousStudent
 from models.assessment import Assessment as Assessment
 from models.audit_event import AuditEvent as AuditEvent
 from models.backup_record import BackupRecord as BackupRecord
+from models.department import Department as Department
 from models.export_record import ExportRecord as ExportRecord
 from models.grade_record import GradeRecord as GradeRecord
 from models.import_batch import ImportBatch as ImportBatch
+from models.instructor_assignment import InstructorAssignment as InstructorAssignment
 from models.material import Material as Material
 from models.question import Question as Question
 from models.response import Response as Response

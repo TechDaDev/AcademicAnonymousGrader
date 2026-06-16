@@ -1,0 +1,115 @@
+# === Environment and Secrets ===
+# Sensitive configuration that must never be committed
+.env
+.env.local
+.env.*
+*.key
+*.pem
+*.cert
+
+# === Python Virtual Environment ===
+.venv/
+venv/
+env/
+ENV/
+
+# === Python Bytecode and Caches ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyz
+
+# === Testing ===
+.pytest_cache/
+.coverage
+.coverage.*
+coverage/
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# === IDE and Editor ===
+# Local VS Code settings that should remain machine-specific
+.vscode/settings.json
+.vscode/launch.json
+# But do NOT ignore recommended extensions
+!.vscode/extensions.json
+
+# === Project Data ===
+# SQLite database files — contain potentially sensitive student data
+*.db
+*.sqlite
+*.sqlite3
+# Keep .gitkeep placeholder
+!data/.gitkeep
+
+# SQLite journal and WAL files
+*.db-journal
+*.db-wal
+*.db-shm
+
+# === Uploaded Files ===
+# Temporary uploaded response files (contain student data)
+uploads/
+uploaded/
+temp/
+# Keep .gitkeep placeholders
+!uploads/.gitkeep
+!uploaded/.gitkeep
+!temp/.gitkeep
+
+# === Generated Exports ===
+# Exported Excel files contain restored student identities
+exports/
+*.xlsx
+*.xls
+output/
+# Keep .gitkeep placeholder
+!exports/.gitkeep
+
+# === Backups ===
+# Database backups contain all student data
+backups/
+backup/
+# Keep .gitkeep placeholder
+!backups/.gitkeep
+
+# === Logs ===
+logs/
+*.log
+
+# === Local Sample Files ===
+# Local manual-testing files may contain real academic data.
+samples/*
+!samples/.gitkeep
+!samples/README.md
+# Keep .gitkeep placeholder
+!logs/.gitkeep
+
+# === Temporary Files ===
+*.tmp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# === Jupyter (if used for exploration) ===
+.ipynb_checkpoints/
+
+# === Documentation ===
+# Do NOT ignore the docs directory
+!docs/
+
+# === Sample Fixtures ===
+# Do NOT ignore sanitised sample fixtures if intentionally committed
+# Uncomment the line below once sample fixtures are created and reviewed:
+# !samples/
+
+# === Distribution / Build Artifacts ===
+dist/
+build/
+*.egg-info/
+*.egg

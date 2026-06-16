@@ -1,0 +1,80 @@
+# Academic Anonymous Grader — Docker Build Context Exclusion
+# Exclude development, sensitive, and non-essential files.
+
+# Version control
+.git
+.gitattributes
+.github
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv
+venv
+env/
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+
+# Test and lint cache
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+coverage/
+htmlcov/
+
+# Local databases (persisted via volumes, not in image)
+data/*.db
+*.db
+data/pytest-of-real_*/
+
+# User-generated content
+backups/
+exports/
+logs/
+uploads/
+temp/
+
+# Sample files (not needed in production image)
+samples/*
+!tests/fixtures/
+
+# Tests (not needed in production runtime)
+tests/
+
+# Deployment scripts (not needed in production runtime)
+deployment/
+
+# Release artifacts
+release/
+release-manifest.json
+
+# Development and CI
+docker-compose.dev.yml
+docker-compose.override.yml
+Makefile
+*.md
+docs/
+
+# Diagnostic / setup scripts not needed at runtime
+# (create_admin.py, fix_classification_review.py, health_check.py ARE needed)
+scripts/create_release_package.py
+scripts/create_diagnostic_bundle.py
+scripts/setup_environment.py
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

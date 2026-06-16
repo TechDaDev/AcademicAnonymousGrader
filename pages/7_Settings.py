@@ -36,6 +36,6 @@ st.markdown(
     "database credentials) are never displayed on this page."
 )
 st.caption(
-    "Full configuration management and backup functionality will be "
-    "implemented in a later phase."
+    "Configuration and backup management are available through the "
+    "deployment scripts and Backup page."
 )

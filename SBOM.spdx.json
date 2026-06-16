@@ -1,0 +1,175 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "academic-anonymous-grader-1.0.0",
+  "creationInfo": {
+    "created": "2026-06-16T18:31:00Z",
+    "creators": [
+      "Tool: Phase-15-SBOM-Generator"
+    ]
+  },
+  "documentNamespace": "https://github.com/TechDaDev/AcademicAnonymousGrader",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-APPLICATION",
+      "name": "academic-anonymous-grader",
+      "versionInfo": "1.0.0",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-PYTHON",
+      "name": "python",
+      "versionInfo": "3.12",
+      "supplier": "Python Software Foundation",
+      "downloadLocation": "https://www.python.org/",
+      "licenseConcluded": "Python-2.0",
+      "licenseDeclared": "Python-2.0",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-BASEIMAGE",
+      "name": "python:3.12-slim",
+      "versionInfo": "3.12-slim",
+      "supplier": "Docker Inc.",
+      "downloadLocation": "https://hub.docker.com/_/python",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-BCRYPT",
+      "name": "bcrypt",
+      "versionInfo": "5.0.0",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-BEAUTIFULSOUP4",
+      "name": "beautifulsoup4",
+      "versionInfo": "4.15.0",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "MIT License",
+      "licenseDeclared": "MIT License",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-CRYPTOGRAPHY",
+      "name": "cryptography",
+      "versionInfo": "49.0.0",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-LXML",
+      "name": "lxml",
+      "versionInfo": "6.1.1",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "https://lxml.de/",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-MYPY",
+      "name": "mypy",
+      "versionInfo": "2.1.0",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-OPENPYXL",
+      "name": "openpyxl",
+      "versionInfo": "3.1.5",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "https://openpyxl.readthedocs.io",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-PIP",
+      "name": "pip",
+      "versionInfo": "26.1.2",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-PYTEST_COV",
+      "name": "pytest-cov",
+      "versionInfo": "7.1.0",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "MIT License",
+      "licenseDeclared": "MIT License",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-PYTHON_DOTENV",
+      "name": "python-dotenv",
+      "versionInfo": "1.2.2",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-RUFF",
+      "name": "ruff",
+      "versionInfo": "0.15.17",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "https://docs.astral.sh/ruff",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-SQLALCHEMY",
+      "name": "SQLAlchemy",
+      "versionInfo": "2.0.50",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "https://www.sqlalchemy.org",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-STREAMLIT",
+      "name": "streamlit",
+      "versionInfo": "1.58.0",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-TYPES_OPENPYXL",
+      "name": "types-openpyxl",
+      "versionInfo": "3.1.5.20260518",
+      "supplier": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    }
+  ]
+}

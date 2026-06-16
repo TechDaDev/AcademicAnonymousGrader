@@ -139,13 +139,16 @@ def _render_dashboard(settings: Settings, engine: Engine, session_factory: Any) 
 
     # System information
     st.subheader("System Information")
-    info_col1, info_col2, info_col3 = st.columns(3)
+    info_col1, info_col2, info_col3, info_col4 = st.columns(4)
     with info_col1:
         st.markdown(f"**Environment:** `{settings.app_env}`")
     with info_col2:
+        from services.version_service import get_display_string
+        st.markdown(f"**Version:** `{get_display_string()}`")
+    with info_col3:
         db_status = "✅ Connected" if engine else "❌ Not connected"
         st.markdown(f"**Database:** {db_status}")
-    with info_col3:
+    with info_col4:
         st.markdown(f"**User:** `{st.session_state.get('username', 'Unknown')}` ({st.session_state.get('role', '?')})")
 
     render_foundation_warning()
@@ -253,11 +256,15 @@ def main() -> None:
             ("📋 Audit", "/Audit"),
             ("💾 Backup", "/Backup"),
             ("⚙️ Settings", "/Settings"),
+            ("📌 Instructor Assignments", "/InstructorAssignments"),
+            ("📊 Analytics", "/Analytics"),
+            ("🏛️ Academic Structure", "/AcademicStructure"),
         ]
     elif can_access_page(role, "Grading"):
         links = [
             ("🏠 Dashboard", "/"),
             ("✏️ Grading", "/Grading"),
+            ("📊 My Analytics", "/Analytics"),
         ]
     else:
         links = [("🏠 Dashboard", "/")]

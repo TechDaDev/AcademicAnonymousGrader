@@ -1,0 +1,20 @@
+{
+  "application": "academic-anonymous-grader",
+  "version": "1.0.0",
+  "schema_version": 3,
+  "handover_created": "2026-06-16T18:32:38.694311+00:00",
+  "contents": {
+    "release": "release/",
+    "governance": "governance/",
+    "operations": "operations/",
+    "security": "security/",
+    "privacy": "privacy/",
+    "training": "training/",
+    "acceptance": "acceptance/",
+    "SBOM": "SBOM/",
+    "institutional_handover": "INSTITUTIONAL_HANDOVER.md",
+    "closure_report": "PROJECT_CLOSURE_REPORT.md"
+  },
+  "checksum_count": 200,
+  "release_checksum": ""
+}

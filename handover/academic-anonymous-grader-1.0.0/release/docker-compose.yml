@@ -1,0 +1,47 @@
+# Academic Anonymous Grader — Docker Compose (Production)
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - UID=${DOCKER_UID:-1000}
+        - GID=${DOCKER_GID:-1000}
+    image: academic-anonymous-grader:latest
+    container_name: academic-anonymous-grader
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - DATA_DIR=/app/data
+      - BACKUP_DIR=/app/backups
+      - EXPORT_DIR=/app/exports
+      - LOG_DIR=/app/logs
+    volumes:
+      - grader_data:/app/data
+      - grader_backups:/app/backups
+      - grader_exports:/app/exports
+      - grader_logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-m", "scripts.health_check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  grader_data:
+    name: grader_data
+  grader_backups:
+    name: grader_backups
+  grader_exports:
+    name: grader_exports
+  grader_logs:
+    name: grader_logs

@@ -2,6 +2,7 @@
 # Sensitive configuration that must never be committed
 .env
 .env.local
+.env.*
 *.key
 *.pem
 *.cert
@@ -77,6 +78,12 @@ backup/
 
 # === Logs ===
 logs/
+
+# === Generated Release and Handover Artifacts ===
+release/
+handover/
+*.zip
+*.tar
 *.log
 
 # === Local Sample Files ===
